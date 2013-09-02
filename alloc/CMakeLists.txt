@@ -1,0 +1,9 @@
+ADD_EXECUTABLE(otl_alloc_test test/otl_alloc_test.cpp)
+SET(GTEST_INCLUDE /root/GTEST/include)
+SET(GTEST_LINK /root/GTEST/lib)
+SET(OTL_INCLUDE ${PROJECT_SOURCE_DIR}/alloc)
+INCLUDE_DIRECTORIES(${GTEST_INCLUDE}; ${OTL_INCLUDE})
+#LINK_DIRECTORIES(${GTEST_LINK})
+TARGET_LINK_LIBRARIES(otl_alloc_test ${GTEST_LINK}/gtest_main.a)
+SET(CMAKE_CXX_FLAGS "-lpthread")
+

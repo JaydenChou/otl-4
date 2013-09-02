@@ -1,0 +1,2 @@
+PROJECT(OTL_ALLOC)
+ADD_SUBDIRECTORY(alloc output)
