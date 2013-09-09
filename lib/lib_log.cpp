@@ -250,6 +250,29 @@ int lib_openlog_ex(lib_log_t *log_fd, const char* file_name, int mask, int flag,
 	return 0;
 }
 
+static int lib_openlog_self(const lib_log_self_t* self)
+{
+	if (NULL != self) {
+
+
+		if (self->log_number > MAX_SELF_DEF_LOG || self->log_number < 0) {
+			fprintf(stderr, "in lib_log.cpp: self define log_number error! log_numer = %d\n", self->log_number);
+			fprintf(stderr, "in lib_log.cpp:open self log error\n");
+			return -1;
+		}
+
+		for (int i = 0; i < self->log_number; ++i) {
+			if (strlen(self->name[i]) == 0 && self->flags[i] == 1) {
+				fprintf(stderr, "int lib_log.cpp: self define log[%d] error!\n", i);
+				fprintf(stderr, "int lib_log.cpp: open self define log[i] error!\n", i);
+				return -1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 /*
  * @brief make the buff to the real log file 
  * @param [in] file_fd : file fd
@@ -383,6 +406,33 @@ static int lib_vwritelog_ex(lib_log_t* log_fd, int event, const char* fmt, ...)
 	va_end(args);
 
 	return ret;
+}
+static int lib_closelog_fd(lib_log_t* log_fd)
+{
+	if (NULL == log_fd) {
+		return -1;
+	}
+
+	if (log_fd->pf != NULL) {
+		lib_close_file(log_fd->pf);
+	}
+
+	if (log_fd->pf_wf != NULL) {
+		lib_close_file(log_fd->pf_wf);
+	}
+
+	for (int i = 0; i < MAX_SELF_DEF_LOG; ++i) {
+		if (log_fd->spf[i] != NULL) {
+			lib_close_file(log_fd->spf[i]);
+		}
+	}
+
+	return 0;
+}
+
+static void log_fd_init()
+{
+	pthread_key_create(&g_log_fd, NULL);
 }
 int lib_openlog(const char* log_path, const char* log_procname, lib_logstat_t *log_stat, int maxlen, lib_log_self_t* self)
 {
