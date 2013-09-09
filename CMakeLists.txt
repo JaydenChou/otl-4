@@ -1,2 +1,3 @@
 PROJECT(OTL_ALLOC)
-ADD_SUBDIRECTORY(alloc output)
+ADD_SUBDIRECTORY(alloc output_alloc)
+ADD_SUBDIRECTORY(lib output_lib)

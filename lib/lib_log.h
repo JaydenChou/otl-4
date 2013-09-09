@@ -6,10 +6,15 @@
 #include <cstdlib>
 #include <limits.h>
 #include <cstring>
+#include <stdarg.h>
 #include <sys/stat.h>
+#include <sys/types.h>
+#include <time.h>
+#include <syslog.h>
 #include "lib_def.h"
 
 #define LOG_FILE_NUM 2048
+#define LOG_BUF_SIZE_EX 2048
 
 #define MAX_FILENAME_LEN 1024
 #define MAX_SELF_DEF_LOG 8
@@ -19,6 +24,11 @@
 #define ERROR_EVENT		-3
 #define ERROR_FILEFULL	-4
 //Lib log level
+//events kinds
+#define LIB_LOG_START	-1
+#define LIB_LOG_WFSTART -2
+#define LIB_LOG_END	LIB_LOG_START
+#define LIG_LOG_WFEND LIB_LOG_WFSTART
 #define LIB_LOG_NONE	0
 #define LIB_LOG_FATAL	0x01	/** fatal errors */
 #define LIB_LOG_WARNING	0x02	/** some exceptions and maybe lead to some potential erros */
