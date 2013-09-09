@@ -1,4 +1,15 @@
 Introduction:
     OTL its means "Open Template Library"
+WARNING:
+	It is some wrong in CMakeLists.txt. I used the  absolute path it.
+ENVIRONMENT:
+	GCC-4.8.1
+	gtest-1.70
+	CMake 2.6.4
+FILE:
+	auto.sh: build the project in the local  
+	alloc	[DIR]: memory alloctor library
+	lib		[DIR]: the project will use base lib. 
 Events:
+	2013.09.09 newwy update. commit the lib_log library. But the library don't complete.
     2013.09.02 newwy created.
