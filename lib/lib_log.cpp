@@ -8,6 +8,9 @@ static lib_file_t g_file_stderr = {stderr, 0, 1, 0, PTHREAD_MUTEX_INITIALIZER, "
 static lib_log_t g_log_stderr = {1, &g_file_stderr, &g_file_stderr, 0, LIB_LOG_ALL, 0, 0, {NULL}};
 
 static char g_proc_name[MAX_FILENAME_LEN+1] = "";
+static int g_file_size;
+static char g_log_path[MAX_FILENAME_LEN+1] = "./";
+static lib_logstat_t g_default_logstat = {LIB_LOG_ALL, LIB_LOG_FATAL, LIB_LOGTTY};
 #define STRING_FATAL	"FATAL:"
 #define STRING_WARNING	"WARNING:"
 #define STRING_TRACE	"TRACE:"
@@ -438,8 +441,53 @@ int lib_openlog(const char* log_path, const char* log_procname, lib_logstat_t *l
 {
 	return 0;
 }
-int lib_openlog_r(const char* threadname, lib_logstat_t* log_stat, lib_log_self_t* self)
+int lib_openlog_r(const char* thread_name, lib_logstat_t* log_stat, lib_log_self_t* self)
 {
+	lib_log_t* log_fd = NULL;
+	pthread_t tid;
+	char file_name[MAX_FILENAME_LEN];
+
+	if (-1 == lib_openlog_self(self)) {
+		return -1;
+	}
+
+	tid = pthread_self();
+
+	if (NULL == log_stat) {
+		log_stat = &g_default_logstat;
+	}
+
+	if ((log_stat->spec & LIB_LOGNEWFILE) && thread_name != NULL && thread_name[0] != '\0') {
+		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s_%s_%lu_", g_log_path, g_proc_name, thread_name, tid);
+	} else if (log_stat->spec & LIB_LOGNEWFILE) {
+		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s_null_%%lu_", g_log_path, g_proc_name, tid);
+	} else {
+		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s", g_log_path, g_proc_name);
+	}
+
+	log_fd = lib_alloc_log_unit();
+	if (NULL == log_fd) {
+		fprintf(stderr, "in lib_log.cpp: no space\n");
+		fprintf(stderr, "in lib_log.cpp: open log error\n");
+	}
+
+	if (lib_openlog_ex(log_fd, file_name, log_stat->level, LIB_FILE_TRUNCATE, g_file_size, self) != 0) {
+		if (log_stat->spec & LIB_LOGTTY) {
+			fprintf(stderr, "in lib_log.cpp: Can't open log file: %slog, exit!\n", file_name);
+		}
+		lib_free_log_unit();
+		return -1;
+	}
+	
+	log_fd->log_spec = log_stat->spec;
+	log_fd->syslog_mask = log_stat->syslog_level;
+
+	if (log_stat->spec & LIB_LOGTTY) {
+		fprintf(stderr, "in lib_log.cpp: Open log file %slog success!", thread_name);
+	}
+
+	lib_vwritelog_ex(log_fd, LIB_LOG_START,"/* Open thread log by -- %s:%s\n =========================", g_proc_name, thread_name);
+	lib_vwritelog_ex(log_fd, LIB_LOG_WFSTART, "/* Open thread log by -- %s:%s\n ======================", g_proc_name, thread_name);
 	return 0;
 }
 int lib_closelog_r(int iserr)
