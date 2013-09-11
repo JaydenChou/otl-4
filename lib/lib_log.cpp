@@ -410,12 +410,12 @@ static int lib_writelog_ex(lib_log_t* log_fd, int event, const char* fmt, ...)
 
 	return ret;
 }
-int lib_write_log(const int event, const char *fmt, ...)
+int lib_writelog(const int event, const char *fmt, ...)
 {
-	int ret;
+	int ret = 0;
 	va_list args;
 	lib_log_t* log_fd;
-	log_fd = lib_alloc_log_unit();
+	log_fd = lib_get_log_unit();
 	/*
 	if (NULL == log_fd) {
 		fprintf(stderr,"in lib_log.cpp: no space\n");
