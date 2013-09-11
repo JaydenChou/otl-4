@@ -1,1 +1,2 @@
 #define PATH_SIZE 256
+#define WORD_SIZE 2048
