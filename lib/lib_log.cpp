@@ -140,7 +140,7 @@ static int lib_check(lib_file_t* file_fd, char* tmp_file, size_t tmp_file_size, 
 	}
 
 	if (0 == file_fd->max_size) {
-		return -1;
+		return 0;
 	}
 
 	if (stderr == file_fd->fp) {
@@ -292,6 +292,7 @@ int lib_vwritelog_buff(lib_file_t* file_fd, char *buff, const int split_file)
 
 	pthread_mutex_lock(&file_fd->file_lock);
 	check_flag = lib_check(file_fd, tmp_filename, sizeof(tmp_filename), split_file);
+	
 	if (check_flag >= 0) {
 		fprintf(file_fd->fp, "%s\n", buff);
 		fflush(file_fd->fp);
@@ -415,7 +416,9 @@ int lib_writelog(const int event, const char *fmt, ...)
 	int ret = 0;
 	va_list args;
 	lib_log_t* log_fd;
+
 	log_fd = lib_get_log_unit();
+
 	/*
 	if (NULL == log_fd) {
 		fprintf(stderr,"in lib_log.cpp: no space\n");
@@ -427,7 +430,6 @@ int lib_writelog(const int event, const char *fmt, ...)
 	if (NULL == log_fd) {
 		log_fd = &g_log_stderr;
 	}
-
 	va_start(args, fmt);
 	int self_log_id = event & LIB_LOG_SELF_MASK;
 	if (event >= LIB_LOG_SELF_BEGIN && event <= LIB_LOG_SELF_END && log_fd->spf[self_log_id] != NULL) {

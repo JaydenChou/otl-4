@@ -1,5 +1,6 @@
 #include "gtest/gtest.h"
 #include "lib_log.h"
+
 TEST(lib_log, test_log_fun)
 {
 	const char *log_path = "/root/git-project/otl/build/output_lib/test_log_path";
@@ -31,8 +32,12 @@ TEST(lib_log, test_log_fun)
 	ret = lib_closelog(false);
 	ASSERT_EQ(0, ret);
 
-//	ASSERT_STREQ("test_log_path", g_log_path);
+}
 
+TEST(lib_log, test_writelog)
+{
+	int ret = lib_writelog(LIB_LOG_FATAL,"the log content will be output stderr\n");
+	ASSERT_EQ(0, ret);
 }
 int main(int argc, char* argv[])
 {
