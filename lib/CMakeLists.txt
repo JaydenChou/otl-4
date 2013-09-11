@@ -1,2 +1,7 @@
-ADD_EXECUTABLE(lib_log lib_log.cpp)
+#ADD_EXECUTABLE(lib_log lib_log.cpp)
+ADD_EXECUTABLE(lib_log_test test/lib_log_test.cpp lib_log.cpp)
+SET(GTEST_INCLUDE /root/GTEST/include)
+SET(GTEST_LINK /root/GTEST/lib)
+INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib; ${GTEST_INCLUDE})
+TARGET_LINK_LIBRARIES(lib_log_test ${GTEST_LINK}/gtest_main.a)
 SET(CMAKE_CXX_FLAGS "-lpthread")

@@ -1,6 +1,7 @@
 #ifndef _LIB_LOG_H
 #define _LIB_LOG_H
 
+#include <errno.h>
 #include <pthread.h>
 #include <cstdio>
 #include <cstdlib>
@@ -16,6 +17,7 @@
 #define LOG_FILE_NUM 2048
 #define LOG_BUF_SIZE_EX 2048
 
+#define MAX_FILE_SIZE	2046
 #define MAX_FILENAME_LEN 1024
 #define MAX_SELF_DEF_LOG 8
 
@@ -28,7 +30,7 @@
 #define LIB_LOG_START	-1
 #define LIB_LOG_WFSTART -2
 #define LIB_LOG_END	LIB_LOG_START
-#define LIG_LOG_WFEND LIB_LOG_WFSTART
+#define LIB_LOG_WFEND LIB_LOG_WFSTART
 #define LIB_LOG_NONE	0
 #define LIB_LOG_FATAL	0x01	/** fatal errors */
 #define LIB_LOG_WARNING	0x02	/** some exceptions and maybe lead to some potential erros */
@@ -36,6 +38,11 @@
 #define LIB_LOG_TRACE	0x08	/** program run trace */
 #define LIB_LOG_DEBUG	0x10	/** for program debug */
 #define LIB_LOG_ALL		0xff	/** all the kind */
+
+#define LIB_LOG_SELF_BEGIN 0x100
+#define LIB_LOG_SELF_END 0x107
+#define LIB_LOG_SELF_MASK 0xff
+
 
 //for lib_logstat_t
 #define LIB_LOGTTY	0x02	/** output the log to the tty(stderr) */

@@ -2,6 +2,7 @@
 
 static pthread_key_t g_log_fd = PTHREAD_KEYS_MAX;
 static pthread_mutex_t file_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_once_t g_log_unit_once = PTHREAD_ONCE_INIT;
 static lib_file_t g_file_array[LOG_FILE_NUM];
 
 static lib_file_t g_file_stderr = {stderr, 0, 1, 0, PTHREAD_MUTEX_INITIALIZER, "/dev/stderr"};
@@ -86,10 +87,9 @@ static FILE* lib_open_file(const char* name, char* mod)
 	strncpy(path, name, path_len);
 	path[path_len] = '\0';
 
-	mkdir(path, 0700);
+	int tmp = mkdir(path, 0700);
 
-	return fopen(path, mod);
-
+	return fopen(name, mod);
 }
 
 static lib_file_t* lib_open_file_unit(const char* file_name, int flag, int max_size)
@@ -112,7 +112,7 @@ static lib_file_t* lib_open_file_unit(const char* file_name, int flag, int max_s
 		}
 	}
 
-	if (file_ret == NULL) {
+	if (file_ret != NULL) {
 		file_ret->fp = lib_open_file(file_name, "a");
 		if (NULL == file_ret->fp) {
 			pthread_mutex_unlock(&file_lock);
@@ -292,7 +292,7 @@ int lib_vwritelog_buff(lib_file_t* file_fd, char *buff, const int split_file)
 
 	pthread_mutex_lock(&file_fd->file_lock);
 	check_flag = lib_check(file_fd, tmp_filename, sizeof(tmp_filename), split_file);
-	if (check_flag > 0) {
+	if (check_flag >= 0) {
 		fprintf(file_fd->fp, "%s\n", buff);
 		fflush(file_fd->fp);
 	}
@@ -381,7 +381,7 @@ int lib_vwritelog_ex(lib_log_t* log_fd, int event, const char *fmt, va_list args
 	}
 	return lib_vwritelog_buff(file_fd, buff, (log_fd->log_spec & LIB_LOGSIZESPLIT));
 }
-int lib_vwritelog_self(lib_log_t* log_fd, int event, const char *fmt, va_list args)
+int lib_vwritelog_ex_self(lib_log_t* log_fd, int event, const char *fmt, va_list args)
 {
 	size_t pos = 0;
 	char buff[LOG_BUF_SIZE_EX];
@@ -400,13 +400,51 @@ int lib_vwritelog_self(lib_log_t* log_fd, int event, const char *fmt, va_list ar
 
 	return lib_vwritelog_buff(file_fd, buff, (log_fd->log_spec & LIB_LOGSIZESPLIT));
 }
-static int lib_vwritelog_ex(lib_log_t* log_fd, int event, const char* fmt, ...)
+static int lib_writelog_ex(lib_log_t* log_fd, int event, const char* fmt, ...)
 {
 	int ret = 0;
 	va_list args;
 	va_start(args, fmt);
 	ret = lib_vwritelog_ex(log_fd, event, fmt, args);
 	va_end(args);
+
+	return ret;
+}
+int lib_write_log(const int event, const char *fmt, ...)
+{
+	int ret;
+	va_list args;
+	lib_log_t* log_fd;
+	log_fd = lib_alloc_log_unit();
+	/*
+	if (NULL == log_fd) {
+		fprintf(stderr,"in lib_log.cpp: no space\n");
+		fprintf(stderr,"in lib_log.cpp: open log fail\n");
+		return -1;
+	}
+	*/
+
+	if (NULL == log_fd) {
+		log_fd = &g_log_stderr;
+	}
+
+	va_start(args, fmt);
+	int self_log_id = event & LIB_LOG_SELF_MASK;
+	if (event >= LIB_LOG_SELF_BEGIN && event <= LIB_LOG_SELF_END && log_fd->spf[self_log_id] != NULL) {
+		ret = lib_vwritelog_ex_self(log_fd, self_log_id, fmt, args);
+	} else if (log_fd->mask < event) {
+		ret = ERROR_EVENT;
+	} else {
+		ret = lib_vwritelog_ex(log_fd, event, fmt, args);
+	}
+
+	va_end(args);
+
+	if (log_fd->log_spec & LIB_LOGTTY) {
+		va_start(args, fmt);
+		ret = lib_vwritelog_ex(&g_log_stderr, event, fmt, args);
+		va_end(args);
+	}
 
 	return ret;
 }
@@ -437,8 +475,78 @@ static void log_fd_init()
 {
 	pthread_key_create(&g_log_fd, NULL);
 }
+static void lib_threadlog_sup()
+{
+	pthread_once(&g_log_unit_once, &log_fd_init);
+}
 int lib_openlog(const char* log_path, const char* log_procname, lib_logstat_t *log_stat, int maxlen, lib_log_self_t* self)
 {
+	lib_log_t *log_fd = NULL;
+	char *end = NULL;
+	char filename[MAX_FILENAME_LEN];
+
+	lib_threadlog_sup();
+
+	if (-1 == lib_openlog_self(self)) {
+		return -1;
+	}
+
+	if (NULL == log_stat) {
+		log_stat = &g_default_logstat;
+	}
+
+	if (maxlen <= 0 || maxlen >= MAX_FILE_SIZE) {
+		g_file_size = (MAX_FILE_SIZE << 20);
+	} else {
+		g_file_size = (maxlen << 20);
+	}
+	if (NULL == log_path || log_path[0] == '\0') {
+		g_log_path[0] = '.';
+		g_log_path[1] = '\0';
+	} else {
+		strncpy(g_log_path, log_path, MAX_FILENAME_LEN);
+		g_log_path[MAX_FILENAME_LEN] == '\0';
+	}
+
+	if (NULL == log_procname || log_procname[0] == '\0') {
+		snprintf(g_proc_name, sizeof(g_proc_name), "%s", "null");
+	} else {
+		strncpy(g_proc_name, log_procname, MAX_FILENAME_LEN);
+		g_proc_name[MAX_FILENAME_LEN] = '\0';
+		end = strchr(g_proc_name, '_');
+		if (NULL != end) {
+			*end = '\0';
+		}
+	}
+
+	snprintf(filename, MAX_FILENAME_LEN, "%s/%s", g_log_path, g_proc_name);
+
+	log_fd = lib_alloc_log_unit();
+
+	if (NULL == log_fd) {
+		fprintf(stderr, "in lib_log.cpp: no space\n");
+		fprintf(stderr, "in lib_log.cpp: open log fail");
+		return -1;
+	}
+
+	if (lib_openlog_ex(log_fd, filename, log_stat->level, LIB_FILE_TRUNCATE, g_file_size, self) != 0) {
+		if (log_stat->spec & LIB_LOGTTY) {
+			fprintf(stderr, "in lib_log.cpp: can't open log file: %slog. exit!\n", g_proc_name);
+		}
+		lib_free_log_unit();
+		return -1;
+	}
+	
+	log_fd->log_spec = log_stat->spec;
+	log_fd->syslog_mask = log_stat->syslog_level;
+
+	if (log_stat->spec & LIB_LOGTTY) {
+		fprintf(stderr, "Open log file: %slog success!\n", g_proc_name);
+	}
+
+	lib_writelog_ex(log_fd, LIB_LOG_START, "* open process log by -----%s\n=================", log_procname);
+	lib_writelog_ex(log_fd, LIB_LOG_WFSTART, "* open process log by ----%s\n================", log_procname);
+
 	return 0;
 }
 int lib_openlog_r(const char* thread_name, lib_logstat_t* log_stat, lib_log_self_t* self)
@@ -486,17 +594,51 @@ int lib_openlog_r(const char* thread_name, lib_logstat_t* log_stat, lib_log_self
 		fprintf(stderr, "in lib_log.cpp: Open log file %slog success!", thread_name);
 	}
 
-	lib_vwritelog_ex(log_fd, LIB_LOG_START,"/* Open thread log by -- %s:%s\n =========================", g_proc_name, thread_name);
-	lib_vwritelog_ex(log_fd, LIB_LOG_WFSTART, "/* Open thread log by -- %s:%s\n ======================", g_proc_name, thread_name);
+	lib_writelog_ex(log_fd, LIB_LOG_START,"/* Open thread log by -- %s:%s\n =========================", g_proc_name, thread_name);
+	lib_writelog_ex(log_fd, LIB_LOG_WFSTART, "/* Open thread log by -- %s:%s\n ======================", g_proc_name, thread_name);
 	return 0;
 }
-int lib_closelog_r(int iserr)
+static int lib_closelog_ex(int iserr, const char* close_info)
 {
+	lib_log_t* log_fd;
+	log_fd = lib_get_log_unit();
+
+	if (NULL == log_fd) {
+		return -1;
+	}
+
+	if (iserr) {
+		lib_writelog_ex(log_fd, LIB_LOG_END,"Abnormally END %s======================\n",close_info);
+		lib_writelog_ex(log_fd, LIB_LOG_WFEND, "Abnormally END %s=====================\n", close_info);
+	} else {
+		lib_writelog_ex(log_fd, LIB_LOG_END,"Normally END %s=========================\n", close_info);
+		lib_writelog_ex(log_fd, LIB_LOG_WFEND,"Normally END %s=======================\n", close_info);
+	}
+
+	lib_closelog_fd(log_fd);
+
+	if (log_fd->log_spec &LIB_LOGTTY) {
+		fprintf(stderr, "Close log success!\n");
+	}
+
+	lib_free_log_unit();
+
 	return 0;
 }
 
+int lib_closelog_r(int iserr)
+{
+	return lib_closelog_ex(iserr, "thread");
+}
+
+int lib_closelog(int iserr)
+{
+	return lib_closelog_ex(iserr, "process");
+}
+/*
 int main()
 {
 	printf("hello world");
 	return 0;
 }
+*/
