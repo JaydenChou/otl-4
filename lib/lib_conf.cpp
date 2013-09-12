@@ -51,11 +51,9 @@ static int parse_line(char *line, char* key, char* value)
 		lib_writelog(LIB_LOG_WARNING, "the line %s length less 0", line);
 		return -1;
 	}
-
 	if (line[0] == '#') {
 		return 1;//code comments
 	}
-
 	int i;
 	bool prefix_flag = false;
 	bool key_done = false;
@@ -72,24 +70,35 @@ static int parse_line(char *line, char* key, char* value)
 			prefix_flag = true;
 		}
 
-		if ((line[i] != ':' || line[i] != SPACE || line[i] != TAB) && prefix_flag && !key_done) {
+		if (line[i] != ':' && prefix_flag && !key_done) {
 			key[j++] = line[i];
-		} else if (!key_done) {
+		} 
+
+		if (line[i] == ':' && prefix_flag && !key_done) {
 			key[j] = '\0';
+			--j;
+			for(; key[j] == SPACE || key[j] == TAB; --j) {
+				key[j] = '\0';
+			}
 			key_done = true;
-		}
-
-		if (line[i] == ':' && key_done) {
-			value_start = true;
 			j = 0;
+			++i;
 		}
 
-		if (line[i] != SPACE && line[i] != TAB && value_start) {
+		if (line[i] != SPACE && line[i] != TAB && line[i] !='\r' && line[j] != '\n' && key_done && !value_start) {
+			value_start = true;
+		}
+
+		if (line[i] != '\r' && line[i] != '\n' && value_start) {
 			value[j++] = line[i];
 		}
 		
 	}
 	value[j] = '\0';
+	--j;
+	for(; value[j] == SPACE || value[j] == TAB; --j) {
+	   value[j] = '\0';
+	}	   
 
 	return 0;
 
@@ -111,8 +120,8 @@ static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf, i
 	char line[LINE_SIZE];
 	char key[WORD_SIZE];
 	char value[WORD_SIZE];
-	while (fgets(line, LINE_SIZE-1, fp) != NULL) {
 	
+	while (fgets(line, LINE_SIZE-1, fp) != NULL) {
 		if (item_num >= p_conf->size) {
 			ret = -1;
 			goto end;
@@ -124,17 +133,20 @@ static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf, i
 				lib_writelog(LIB_LOG_WARNING,"valid line: %s", line);
 				break;
 			case 1:
+				lib_writelog(LIB_LOG_DEBUG,"comments");
+				break;
 			case 2:
+				lib_writelog(LIB_LOG_DEBUG, "blank line");
 				break;
 			case 0:
 				snprintf(p_conf->item[item_num].name, WORD_SIZE, "%s",key);
 				snprintf(p_conf->item[item_num].value, WORD_SIZE, "%s",value);
+				++item_num;
 				break;
 			default:
 				break;
 		}
 
-		++item_num;
 	}
 end:
 	if (NULL != fp) {
