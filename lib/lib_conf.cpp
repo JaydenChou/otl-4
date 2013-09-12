@@ -148,6 +148,8 @@ static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf, i
 		}
 
 	}
+
+	p_conf->num = item_num;
 end:
 	if (NULL != fp) {
 		fclose(fp);
