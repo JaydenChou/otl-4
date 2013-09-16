@@ -2,6 +2,24 @@
 #include "lib_log.h"
 #include "lib_conf.h"
 
+void *debug_malloc(size_t size, const char *file, int line, const char *func)
+{
+	void *p;
+
+	p = malloc(size);
+	printf("%s:%d:%s:malloc(%ld): p=0x%lx\n",
+			file, line, func, size, (unsigned long)p);
+	return p;
+}
+
+#define malloc(s) debug_malloc(s, __FILE__, __LINE__, __func__)
+#define free(p)  do {                                                   \
+	printf("%s:%d:%s:free(0x%lx)\n", __FILE__, __LINE__,            \
+			__func__, (unsigned long)p);                                \
+	free(p);                                                        \
+} while (0)
+
+
 lib_conf_data_t* lib_initconf(int confnum)
 {
 	lib_conf_data_t* p_conf = (lib_conf_data_t*) calloc(1, sizeof(lib_conf_data_t));
@@ -27,12 +45,15 @@ lib_conf_data_t* lib_initconf(int confnum)
 
 int lib_freeconf(lib_conf_data_t* p_conf)
 {
-	if (NULL != p_conf) {
-		if (NULL != p_conf->item) {
-			free(p_conf->item);
-		}
-		free(p_conf);
+	if (NULL == p_conf) {
+		return 1;
 	}
+	
+	if (NULL != p_conf->item) {
+		free(p_conf->item);
+	}
+
+	free(p_conf);
 
 	return 1;
 }
@@ -139,8 +160,9 @@ static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf, i
 				lib_writelog(LIB_LOG_DEBUG, "blank line");
 				break;
 			case 0:
-				snprintf(p_conf->item[item_num].name, WORD_SIZE, "%s",key);
-				snprintf(p_conf->item[item_num].value, WORD_SIZE, "%s",value);
+
+				snprintf(p_conf->item[item_num].name, sizeof(p_conf->item[item_num].name), "%s",key);
+				snprintf(p_conf->item[item_num].value, sizeof(p_conf->item[item_num].value), "%s",value);
 				++item_num;
 				break;
 			default:
@@ -150,6 +172,7 @@ static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf, i
 	}
 
 	p_conf->num = item_num;
+
 end:
 	if (NULL != fp) {
 		fclose(fp);
@@ -159,7 +182,7 @@ end:
 
 static int lib_readconf_no_dir(const char *full_path, lib_conf_data_t* p_conf)
 {
-	return lib_readconf_no_dir(full_path, p_conf, 0);
+	return lib_readconf_no_dir(full_path, p_conf, p_conf->num);
 }
 
 int lib_readconf(const char* work_path, const char* filename, lib_conf_data_t* p_conf)
@@ -170,7 +193,7 @@ int lib_readconf(const char* work_path, const char* filename, lib_conf_data_t* p
 	}
 
 	char fullname[PATH_SIZE];
-	snprintf(fullname, PATH_SIZE, "%s/%s", work_path, filename);
+	snprintf(fullname, sizeof(fullname), "%s/%s", work_path, filename);
 	
 	return lib_readconf_no_dir(fullname, p_conf);
 }
@@ -184,13 +207,21 @@ static int lib_readconf_include(const char* path, lib_conf_data_t* p_conf)
 {
 	int i = 0;
 	char fullpath[LINE_SIZE];
+	char filename[LINE_SIZE];
 	for (; i < p_conf->num; ++i) {
 		if (!strcmp("$include", p_conf->item[i].name)) {
 			char *value = p_conf->item[i].value;
+			int cnt = 0;
+			for (; *value != '\0'; ++value) {
+				filename[cnt++] = *value;
+			}
+			filename[cnt] = '\0';
+
+
 			if (abs_path(value)) {
-				return lib_readconf_no_dir(value, p_conf, p_conf->num);
+				return lib_readconf_no_dir(filename, p_conf, p_conf->num);
 			} else {
-				snprintf(fullpath, LINE_SIZE, "%s/%s", path, value);
+				snprintf(fullpath, sizeof(fullpath), "%s/%s", path, filename);
 				return lib_readconf_no_dir(fullpath, p_conf, p_conf->num);
 			}
 		} else {
@@ -209,8 +240,9 @@ int lib_readconf_ex(const char* work_path, const char* fname, lib_conf_data_t* p
 		return -1;
 	}
 	char fullname[LINE_SIZE];
-	snprintf(fullname, LINE_SIZE, "%s/%s", work_path, fname);
+	snprintf(fullname, sizeof(fullname), "%s/%s", work_path, fname);
 	int ret = lib_readconf_no_dir(fullname, p_conf);
+
 	if (ret != 0) {
 		return ret;
 	}
