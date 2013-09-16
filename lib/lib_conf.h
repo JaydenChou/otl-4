@@ -36,4 +36,16 @@ int lib_freeconf(lib_conf_data_t* p_conf);
  * @return 0 success, -1 fail
  */
 int lib_readconf(const char* work_path, const char* filename, lib_conf_data_t* p_conf);
+
+/*
+ * @brief read the contents of configure to structure, support $include grammar.
+ *		it will continue to read the specified configure, if you specify the "conf2",
+ *		the program will read the "conf2" file after reading the configure file.
+ *		if the conf2 in the presence of conf, so as to master file.
+ * @param[in/out] work_path: the configure's path
+ * @param[in/out] fname: the configure file name
+ * @param[in/out] p_conf: the structure of conf
+ * @return 0 success other fail
+ */
+int lib_readconf_ex(const char* work_path, const char* fname, lib_conf_data_t* p_conf);
 #endif

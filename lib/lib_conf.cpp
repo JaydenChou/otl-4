@@ -175,6 +175,50 @@ int lib_readconf(const char* work_path, const char* filename, lib_conf_data_t* p
 	return lib_readconf_no_dir(fullname, p_conf);
 }
 
+static bool abs_path(const char* path) 
+{
+	return path[0] == '/' || !strncmp(path, "~/", 2);
+}
+
+static int lib_readconf_include(const char* path, lib_conf_data_t* p_conf) 
+{
+	int i = 0;
+	char fullpath[LINE_SIZE];
+	for (; i < p_conf->num; ++i) {
+		if (!strcmp("$include", p_conf->item[i].name)) {
+			char *value = p_conf->item[i].value;
+			if (abs_path(value)) {
+				return lib_readconf_no_dir(value, p_conf, p_conf->num);
+			} else {
+				snprintf(fullpath, LINE_SIZE, "%s/%s", path, value);
+				return lib_readconf_no_dir(fullpath, p_conf, p_conf->num);
+			}
+		} else {
+			continue;
+		}
+	}
+	return 0;
+
+}
+
+
+int lib_readconf_ex(const char* work_path, const char* fname, lib_conf_data_t* p_conf)
+{
+	if (NULL == work_path || NULL == fname) {
+		lib_writelog(LIB_LOG_FATAL, "there is NULL pointer in params");
+		return -1;
+	}
+	char fullname[LINE_SIZE];
+	snprintf(fullname, LINE_SIZE, "%s/%s", work_path, fname);
+	int ret = lib_readconf_no_dir(fullname, p_conf);
+	if (ret != 0) {
+		return ret;
+	}
+
+	return lib_readconf_include(work_path, p_conf);
+
+}
+
 
 /*
 int main()

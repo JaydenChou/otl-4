@@ -66,18 +66,39 @@ TEST(lib_conf, test_readconf)
 	EXPECT_STREQ("78902",p_conf->item[i].value);
 	EXPECT_STREQ("name10",p_conf->item[++i].name);
 	EXPECT_STREQ("789034",p_conf->item[i].value);
-/*	
-	for(i = 0; i < 7; i++) {
-		printf("%s: %s\n", p_conf->item[i].name, p_conf->item[i].value);
-	}
-	
-	*/
-	
 
 	remove("/root/git-project/otl/build/output_lib/testconf");
 
 }
 
+TEST(lib_conf, test_lib_readconf_ex)
+{
+	lib_conf_data_t *p_conf;
+	p_conf = lib_initconf(0);
+
+	
+	FILE* fp = fopen("testconf1", "w");
+	fprintf(fp,"$include : testconf2\n");
+	fprintf(fp," key : value \n");
+	fclose(fp);
+
+	fp = fopen("testconf2", "w");
+	fprintf(fp, "key2 : value2\n");
+	fclose(fp);
+
+	int ret = lib_readconf_ex("/root/git-project/otl/build/output_lib", "testconf1", p_conf);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(3, p_conf->num);
+	EXPECT_STREQ("$include", p_conf->item[0].name);
+	EXPECT_STREQ("testconf2", p_conf->item[0].value);
+	EXPECT_STREQ("key", p_conf->item[1].name);
+	EXPECT_STREQ("value", p_conf->item[1].value);
+	EXPECT_STREQ("key2", p_conf->item[2].name);
+	EXPECT_STREQ("value2", p_conf->item[2].value);
+	remove("/root/git-project/otl/build/output_lib/testconf1");
+	remove("/root/git-project/otl/build/output_lib/testconf2");
+
+}
 
 int main(int argc, char* argv[])
 {
