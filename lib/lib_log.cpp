@@ -87,7 +87,7 @@ static FILE* lib_open_file(const char* name, char* mod)
 	strncpy(path, name, path_len);
 	path[path_len] = '\0';
 
-	int tmp = mkdir(path, 0700);
+	mkdir(path, 0700);
 
 	return fopen(name, mod);
 }
@@ -172,7 +172,7 @@ static int lib_check(lib_file_t* file_fd, char* tmp_file, size_t tmp_file_size, 
 		   time_t tmp_time;
 		   struct tm vtm;
 		   localtime_r(&tmp_time, &vtm);
-		   int retl = snprintf(tmp_file, tmp_file_size, "%s.%04d%02d%02d%02d%02d%02d", vtm.tm_year+1900, vtm.tm_mon+1, vtm.tm_mday, vtm.tm_hour, vtm.tm_min, vtm.tm_sec);
+		   int retl = snprintf(tmp_file, tmp_file_size, "%s.%04d%02d%02d%02d%02d%02d", file_fd->file_name, vtm.tm_year+1900, vtm.tm_mon+1, vtm.tm_mday, vtm.tm_hour, vtm.tm_min, vtm.tm_sec);
 		   int suff_num = 0;
 		   struct stat statbuf;
 		   while (stat(tmp_file, &statbuf) == 0) {
@@ -267,7 +267,7 @@ static int lib_openlog_self(const lib_log_self_t* self)
 		for (int i = 0; i < self->log_number; ++i) {
 			if (strlen(self->name[i]) == 0 && self->flags[i] == 1) {
 				fprintf(stderr, "int lib_log.cpp: self define log[%d] error!\n", i);
-				fprintf(stderr, "int lib_log.cpp: open self define log[i] error!\n", i);
+				fprintf(stderr, "int lib_log.cpp: open self define log[%d] error!\n", i);
 				return -1;
 			}
 		}
@@ -570,7 +570,7 @@ int lib_openlog_r(const char* thread_name, lib_logstat_t* log_stat, lib_log_self
 	if ((log_stat->spec & LIB_LOGNEWFILE) && thread_name != NULL && thread_name[0] != '\0') {
 		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s_%s_%lu_", g_log_path, g_proc_name, thread_name, tid);
 	} else if (log_stat->spec & LIB_LOGNEWFILE) {
-		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s_null_%%lu_", g_log_path, g_proc_name, tid);
+		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s_null_%lu_", g_log_path, g_proc_name, tid);
 	} else {
 		snprintf(file_name, MAX_FILENAME_LEN, "%s/%s", g_log_path, g_proc_name);
 	}

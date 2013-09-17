@@ -19,7 +19,7 @@ TEST(lib_conf, test_readconf)
 	lib_conf_data_t *p_conf;
 	p_conf = lib_initconf(0);
 
-	int ret = lib_readconf("/root/git-project/otl", "testconf", p_conf);
+	int ret = lib_readconf("/root/git-project/otl/output", "testconf", p_conf);
 	ASSERT_EQ(-1, ret);
 	
 	
@@ -40,7 +40,7 @@ TEST(lib_conf, test_readconf)
 	fprintf(fp, "  name10  :  789034   \n");
 	fclose(fp);
 	
-	ret = lib_readconf("/root/git-project/otl", "testconf", p_conf);
+	ret = lib_readconf("/root/git-project/otl/output", "testconf", p_conf);
 	ASSERT_EQ(0,ret);
 	
 	int i = 0;
@@ -67,7 +67,7 @@ TEST(lib_conf, test_readconf)
 	EXPECT_STREQ("name10",p_conf->item[++i].name);
 	EXPECT_STREQ("789034",p_conf->item[i].value);
 
-	remove("/root/git-project/otl/testconf");
+	remove("/root/git-project/otl/output/testconf");
 
 }
 
@@ -86,7 +86,7 @@ TEST(lib_conf, test_lib_readconf_ex_nodiff)
 	fprintf(fp, "key2 : value2\n");
 	fclose(fp);
 
-	int ret = lib_readconf_ex("/root/git-project/otl", "testconf1", p_conf);
+	int ret = lib_readconf_ex("/root/git-project/otl/output", "testconf1", p_conf);
 	EXPECT_EQ(0, ret);
 	EXPECT_EQ(3, p_conf->num);
 	EXPECT_STREQ("$include", p_conf->item[0].name);
@@ -99,8 +99,8 @@ TEST(lib_conf, test_lib_readconf_ex_nodiff)
 	lib_freeconf(p_conf);
 	p_conf = NULL;
 
-	remove("/root/git-project/otl/testconf1");
-	remove("/root/git-project/otl/testconf2");
+	remove("/root/git-project/otl/output/testconf1");
+	remove("/root/git-project/otl/output/testconf2");
 
 }
 
@@ -120,7 +120,7 @@ TEST(lib_conf, test_lib_readconf_ex_diff)
 	fprintf(fp, "key1:value2\n");
 	fclose(fp);
 	
-	int ret = lib_readconf_ex("/root/git-project/otl", "testconf3", p_conf);
+	int ret = lib_readconf_ex("/root/git-project/otl/output/", "testconf3", p_conf);
 	
 	EXPECT_EQ(0, ret);
 	
@@ -131,8 +131,8 @@ TEST(lib_conf, test_lib_readconf_ex_diff)
 	//lib_freeconf(p_conf);
 	//p_conf = NULL;
 
-	remove("/root/git-project/otl/testconf3");
-	remove("/root/git-project/otl/testconf4");
+	remove("/root/git-project/otl/output/testconf3");
+	remove("/root/git-project/otl/output/testconf4");
 	
 }
 
