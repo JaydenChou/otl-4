@@ -136,6 +136,56 @@ TEST(lib_conf, test_lib_readconf_ex_diff)
 	
 }
 
+TEST(lib_conf, test_lib_writeconf)
+{
+	lib_conf_data_t *p_conf;
+
+	p_conf = lib_initconf(0);
+	FILE *fp = fopen("testconf5", "w");
+	fprintf(fp, "key1:value1\n");
+	fclose(fp);
+	
+	int ret = lib_readconf(".", "testconf5", p_conf);
+
+	ret = lib_writeconf(".", "testconf6", p_conf);
+
+	fp = fopen("testconf6", "r");
+	EXPECT_TRUE(NULL != fp);
+	char buf[LINE_SIZE];
+	fgets(buf, LINE_SIZE, fp);
+
+	EXPECT_STREQ("key1:value1\n", buf);
+
+	remove("./testconf5");
+	remove("./testconf6");
+
+	EXPECT_EQ(0, ret);
+
+
+}
+
+TEST(lib_conf, test_lib_modifyconfstr)
+{
+
+	lib_conf_data_t *p_conf;
+
+	p_conf = lib_initconf(0);
+	FILE *fp = fopen("testconf7", "w");
+	fprintf(fp, "key1:value1\n");
+	fclose(fp);
+	
+	int ret = lib_readconf(".", "testconf7", p_conf);
+
+	EXPECT_EQ(0, ret);
+
+	ret = lib_modifyconfstr(p_conf, "key1", "value2");
+	EXPECT_EQ(0, ret);
+	EXPECT_STREQ("value2", p_conf->item[0].value);
+
+	remove("./testconf7");
+
+}
+
 int main(int argc, char* argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);

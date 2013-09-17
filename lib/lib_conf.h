@@ -48,4 +48,34 @@ int lib_readconf(const char* work_path, const char* filename, lib_conf_data_t* p
  * @return 0 success other fail
  */
 int lib_readconf_ex(const char* work_path, const char* fname, lib_conf_data_t* p_conf);
+
+/*
+ * @brief write the conf struct to file
+ * @param[in] work_path: work directory
+ * @param[in] fname: file name
+ * @param[in] p_conf: conf strcut data
+ * @return 0 success -1 failed
+ */
+int lib_writeconf(const char* work_path, const char* fname, lib_conf_data_t* p_conf);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+int lib_modifyconfstr(lib_conf_data_t *p_conf, char *name, char* value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+int lib_addconfstr(lib_conf_data_t *p_conf, char *name, char *value);
+
+
 #endif
+

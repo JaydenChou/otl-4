@@ -251,6 +251,119 @@ int lib_readconf_ex(const char* work_path, const char* fname, lib_conf_data_t* p
 
 }
 
+int lib_writeconf(const char* work_path, const char* fname, lib_conf_data_t* p_conf)
+{
+	if (NULL == work_path || NULL == fname || NULL == p_conf) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_writeconf: null params");
+		return -1;
+	}
+
+	if (p_conf->num > p_conf->size || p_conf->num < 0) {
+		lib_writelog(LIB_LOG_WARNING, "in lib_writeconf: p_conf->num is invalid");
+		return -1;
+	}
+
+	char fullpath[LINE_SIZE];
+	char key[WORD_SIZE];
+	char value[WORD_SIZE];
+	snprintf(fullpath, sizeof(fullpath), "%s/%s", work_path, fname);
+	FILE *fp = fopen(fullpath, "w");
+
+	if (NULL == fp) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_writelog:  open file [%s] failed", fullpath);
+		return -1;
+	}
+
+	int i = 0;
+	for (; i < p_conf->num; ++i) {
+		if (sscanf(p_conf->item[i].name, "%s", key) != 1) {
+			continue;
+		}
+		if (sscanf(p_conf->item[i].value, "%s", value) != 1) {
+			continue;
+		}
+		fprintf(fp,"%s:%s\n", key, value);
+	}
+
+	fclose(fp);
+
+	return 0;
+}
+
+int lib_modifyconfstr(lib_conf_data_t *p_conf, char *name, char *value)
+{
+	if (NULL == p_conf || NULL == name || NULL == value) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconfstr: null param");
+		return -1;
+	}
+
+	if (strlen(value) > WORD_SIZE) {
+		lib_writelog(LIB_LOG_WARNING, "the value is invalid");
+		return -1;
+	}
+
+	int i = 0;
+	for (; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%s", value);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+enum {
+	TYPE_INT,
+	TYPE_UINT,
+	TYPE_INT64,
+	TYPE_UINT64,
+	TYPE_STRING,
+	TYPE_FLOAT,
+};
+
+static int lib_addconf(lib_conf_data_t *p_conf, char *name, void *value, int type)
+{
+	if (NULL == p_conf || NULL == name || NULL == value) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_addconfstr: null param");
+		return -1;
+	}
+
+	if (p_conf->num > p_conf->size || p_conf->num < 0) {
+		lib_writelog(LIB_LOG_FATAL, "configure struct item num invalid");
+		return -1;
+	}
+
+	if (strlen(name) > WORD_SIZE || strlen(value) > WORD_SIZE) {
+		lib_writelog(LIB_LOG_FATAL, "the name or value to large");
+		return -1;
+	}
+
+	int i = 0;
+	for (; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			return 0;
+		}
+	}
+
+	strncpy(p_conf->item[p_conf->num].name, name, WORD_SIZE);
+	switch(type) {
+		case TYPE_STRING:
+			strncpy(p_conf->item[p_conf->num].value, (char *)value, WORD_SIZE);
+			break;
+		default:
+			break;
+	}
+
+	++p_conf->num;
+
+	return 0;
+}
+
+int lib_addconfstr(lib_conf_data_t *p_conf, char *name, char *value)
+{
+	return lib_addconf(p_conf, name, value, TYPE_STRING):
+}
 
 /*
 int main()
