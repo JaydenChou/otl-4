@@ -128,8 +128,8 @@ TEST(lib_conf, test_lib_readconf_ex_diff)
 	EXPECT_STREQ("testconf4", p_conf->item[2].value);
 	EXPECT_STREQ("value1", p_conf->item[0].value);
 	
-	//lib_freeconf(p_conf);
-	//p_conf = NULL;
+	lib_freeconf(p_conf);
+	p_conf = NULL;
 
 	remove("/root/git-project/otl/output/testconf3");
 	remove("/root/git-project/otl/output/testconf4");
