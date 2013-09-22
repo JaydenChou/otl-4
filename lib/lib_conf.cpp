@@ -31,10 +31,10 @@ lib_conf_data_t* lib_initconf(int confnum)
 	if (confnum < 1024) {
 		p_conf->size = 1024;
 	} else {
-		p_conf->size = 1024;
+		p_conf->size = confnum;
 	}
 
-	p_conf->item = (lib_conf_item_t*) calloc(1, sizeof(lib_conf_item_t));
+	p_conf->item = (lib_conf_item_t*) calloc((size_t)p_conf->size, sizeof(lib_conf_item_t));
 
 	if (NULL == p_conf->item) {
 		lib_writelog(LOG_WARNING, "in lib_conf.cpp: calloc space for conf->item failed");
@@ -322,10 +322,10 @@ enum {
 	TYPE_FLOAT,
 };
 
-static int lib_addconf(lib_conf_data_t *p_conf, char *name, void *value, int type)
+static int lib_addconf(lib_conf_data_t *p_conf, const char *name, void *value, int type)
 {
 	if (NULL == p_conf || NULL == name || NULL == value) {
-		lib_writelog(LIB_LOG_FATAL, "in lib_addconfstr: null param");
+		lib_writelog(LIB_LOG_FATAL, "in lib_addconf: null param");
 		return -1;
 	}
 
@@ -334,7 +334,7 @@ static int lib_addconf(lib_conf_data_t *p_conf, char *name, void *value, int typ
 		return -1;
 	}
 
-	if (strlen(name) > WORD_SIZE || strlen(value) > WORD_SIZE) {
+	if (strlen(name) > WORD_SIZE || strlen((char *)value) > WORD_SIZE) {
 		lib_writelog(LIB_LOG_FATAL, "the name or value to large");
 		return -1;
 	}
@@ -346,10 +346,27 @@ static int lib_addconf(lib_conf_data_t *p_conf, char *name, void *value, int typ
 		}
 	}
 
+	
 	strncpy(p_conf->item[p_conf->num].name, name, WORD_SIZE);
+	
 	switch(type) {
 		case TYPE_STRING:
 			strncpy(p_conf->item[p_conf->num].value, (char *)value, WORD_SIZE);
+			break;
+		case TYPE_INT:
+			snprintf(p_conf->item[p_conf->num].value, sizeof(p_conf->item[p_conf->num].value), "%d", *((int *)value));
+			break;
+		case TYPE_FLOAT:
+			snprintf(p_conf->item[p_conf->num].value, sizeof(p_conf->item[p_conf->num].value), "%f", *((float *)value));
+			break;
+		case TYPE_UINT:
+			snprintf(p_conf->item[p_conf->num].value, sizeof(p_conf->item[p_conf->num].value), "%u", *((unsigned int*)value));
+			break;
+		case TYPE_INT64:
+			snprintf(p_conf->item[p_conf->num].value, sizeof(p_conf->item[p_conf->num].value), "%lld", *((long long*)value));
+			break;
+		case TYPE_UINT64:
+			snprintf(p_conf->item[p_conf->num].value, sizeof(p_conf->item[p_conf->num].value), "%llu", *((unsigned long long*)value));
 			break;
 		default:
 			break;
@@ -360,11 +377,329 @@ static int lib_addconf(lib_conf_data_t *p_conf, char *name, void *value, int typ
 	return 0;
 }
 
-int lib_addconfstr(lib_conf_data_t *p_conf, char *name, char *value)
+int lib_addconfstr(lib_conf_data_t *p_conf, const char *name, char *value)
 {
-	return lib_addconf(p_conf, name, value, TYPE_STRING):
+	return lib_addconf(p_conf, name, value, TYPE_STRING);
 }
 
+int lib_getconfstr(lib_conf_data_t* p_conf, const char *name, char *value, const size_t size)
+{
+	if (NULL == p_conf || NULL == name || NULL == value) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconstr: param is null");
+		return -1;
+	}
+
+	if (size <= 0 || size > WORD_SIZE) {
+		lib_writelog(LIB_LOG_FATAL, "the param size is invalid");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			strncpy(value, p_conf->item[i].value, size);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lib_getconfint(lib_conf_data_t* p_conf, const char *name, int *value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconfint: param is null");
+		return -1;
+	}
+
+	char tstr[WORD_SIZE];
+	char *p = NULL;
+	int ret;
+	int num;
+	lib_getconfstr(p_conf, name, tstr, sizeof(tstr));
+
+
+	if (strlen(tstr) <= 0) {
+		lib_writelog(LIB_LOG_WARNING, "the value of %s is null", name);
+		return -1;
+	}
+
+	if (tstr[0] == '0' && tstr[1] == 0) {
+		*value = 0;
+		return 0;
+	}
+
+	if (tstr[0] != '0') {
+		p = tstr;
+		ret = sscanf(p, "%d", &num);
+	} else if (tstr[1] != 'x') {
+		p = tstr+1;
+		ret = sscanf(p, "%o", &num);
+	} else {
+		p = tstr+2;
+		ret = sscanf(p, "%x", &num);
+	}
+
+	if (ret <= 0) {
+		return -1;
+	}
+
+	*value = num;
+
+	return 0;
+
+}
+
+int lib_modifyconfint(lib_conf_data_t* p_conf, const char *name, int value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconfint: the param is null");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+				snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%d", value);
+				return 0;
+		}
+	}
+				
+	return -1;			
+}
+
+int lib_addconfint(lib_conf_data_t* p_conf, const char* name, int value)
+{
+	return lib_addconf(p_conf, name, &value, TYPE_INT);
+}
+
+int lib_getconffloat(lib_conf_data_t* p_conf, const char* name, float *value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconffloat: param is null");
+		return -1;
+	}
+
+	char tstr[WORD_SIZE];
+	int ret;
+
+	ret = lib_getconfstr(p_conf, name, tstr, sizeof(tstr));
+	
+	if (ret < 0) {
+		return -1;
+	}
+
+	*value = (float) atof(tstr);
+
+	return 0;
+}
+
+int lib_modifyconffloat(lib_conf_data_t* p_conf, const char*name, float value) 
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconffloat: param is null");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%f", value);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lib_addconffloat(lib_conf_data_t* p_conf, const char *name, float value)
+{
+	return lib_addconf(p_conf, name, &value, TYPE_FLOAT);
+}
+
+int lib_getconfuint(lib_conf_data_t* p_conf, const char *name, unsigned int *value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconfuint: param is null");
+		return -1;
+	}
+	char tstr[WORD_SIZE];
+	char *p = NULL;
+	int ret;
+	int num;
+
+	lib_getconfstr(p_conf, name, tstr, sizeof(tstr));
+
+	if (tstr[0] == '0' && tstr[1] == 0) {
+		*value = 0;
+		return 0;
+	}
+
+	if (tstr[0] != '0') {
+		ret = sscanf(tstr, "%u", &num);
+	} else if (tstr[1] != 'x') {
+		p = tstr+1;
+		ret = sscanf(p, "%o", &num);
+	} else {
+		p = tstr+2;
+		ret = sscanf(p, "%x", &num);
+	}
+
+	if (ret <= 0) {
+		return -1;
+	}
+
+	*value = num;
+	
+	return 0;
+}
+
+int lib_modifyconfuint(lib_conf_data_t* p_conf, const char* name, unsigned int value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconfuint: param is null");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%u", value);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lib_addconfuint(lib_conf_data_t* p_conf, const char* name, unsigned int value)
+{
+	return lib_addconf(p_conf, name, &value, TYPE_UINT);
+}
+
+int lib_getconfint64(lib_conf_data_t* p_conf, const char* name, long long *value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconfint64:param is null");
+		return -1;
+	}
+
+	int ret;
+	long long num;
+	char tstr[WORD_SIZE];
+	char *p = NULL;
+
+	ret = lib_getconfstr(p_conf, name, tstr, sizeof(tstr));
+
+	if (ret != 0) {
+		return -1;
+	}
+
+	if (tstr[0] == '0' && tstr[1] == 0) {
+		*value = 0;
+		return 0;
+	}
+
+	if (tstr[0] != '0') {
+		ret = sscanf(tstr, "%lld", &num);
+	} else if (tstr[1] != 'x') {
+		p = tstr+1;
+		ret = sscanf(p, "%llo", &num);
+	} else {
+		p = tstr+2;
+		ret = sscanf(p, "%llx", &num);
+	}
+
+	if (ret <= 0) {
+		return -1;
+	}
+
+	*value = num;
+
+	return 0;
+}
+
+int lib_modifyconfint64(lib_conf_data_t* p_conf, const char* name, long long value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconfint64:param is null");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%lld", value);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lib_addconfint64(lib_conf_data_t* p_conf, const char* name, long long value)
+{
+	return lib_addconf(p_conf, name, &value, TYPE_INT64);
+}
+
+int lib_getconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long long *value)
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_getconfuint64: param is null");
+		return -1;
+	}
+
+	char tstr[WORD_SIZE];
+	char *p = NULL;
+	int ret;
+	unsigned long long num;
+
+	ret = lib_getconfstr(p_conf, name, tstr, sizeof(tstr));
+
+	if (ret < 0) {
+		return -1;
+	}
+
+	if (tstr[0] == '0' && tstr[1] == 0) {
+		*value = 0;
+		return 0;
+	}
+
+	if (tstr[0] != '0') {
+		ret = sscanf(tstr, "%llu", &num);
+	} else if (tstr[1] != 'x') {
+		p = tstr+1;
+		ret = sscanf(p, "%llo", &num);
+	} else {
+		p = tstr+2;
+		ret = sscanf(p, "%llx", &num);
+	}
+
+	if (ret <= 0) {
+		return -1;
+	}
+
+	*value = num;
+
+	return 0;
+}
+
+int lib_modifyconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long long value) 
+{
+	if (NULL == p_conf || NULL == name) {
+		lib_writelog(LIB_LOG_FATAL, "in lib_modifyconfuint64:param is null");
+		return -1;
+	}
+
+	for (int i = 0; i < p_conf->num; ++i) {
+		if (!strcmp(p_conf->item[i].name, name)) {
+			snprintf(p_conf->item[i].value, sizeof(p_conf->item[i].value), "%llu", value);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+int lib_addconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long long value)
+{
+	return lib_addconf(p_conf, name, &value, TYPE_UINT64);
+}
 /*
 int main()
 {

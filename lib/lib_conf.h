@@ -74,8 +74,166 @@ int lib_modifyconfstr(lib_conf_data_t *p_conf, char *name, char* value);
  * @param[in] value: the item's value
  * @return 0 success -1 failed
  */
-int lib_addconfstr(lib_conf_data_t *p_conf, char *name, char *value);
+int lib_addconfstr(lib_conf_data_t *p_conf, const char *name, char *value);
 
+/*
+ * @brief get the value of item from configure structure, which type is char[string];
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @param [in] size: the value of name buffer length
+ * @return 0 success -1 failed
+ */
+int lib_getconfstr(lib_conf_data_t* p_conf, const char *name, char*value, const size_t size);
 
+/*
+ * @brief get the value of item from configure structure, which type is int
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @return 0 success -1 failed
+ */
+
+int lib_getconfint(lib_conf_data_t* p_conf, const char* name, int *value);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+
+int lib_modifyconfint(lib_conf_data_t* p_conf, const char* name, int value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+
+int lib_addconfint(lib_conf_data_t* p_conf, const char *name, int value);
+
+/*
+ * @brief get the value of item from configure structure, which type is float
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @return 0 success -1 failed
+ */
+
+int lib_getconffloat(lib_conf_data_t* p_conf, const char* name, float *value);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+
+int lib_modifyconffloat(lib_conf_data_t* p_conf, const char* name, float value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+
+int lib_addconffloat(lib_conf_data_t* p_conf, const char *name, float value);
+
+/*
+ * @brief get the value of item from configure structure, which type is uint
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @return 0 success -1 failed
+ */
+
+int lib_getconfuint(lib_conf_data_t* p_conf, const char* name, unsigned int *value);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+
+int lib_modifyconfuint(lib_conf_data_t* p_conf, const char* name, unsigned int value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+
+int lib_addconfuint(lib_conf_data_t* p_conf, const char *name, unsigned int value);
+
+/*
+ * @brief get the value of item from configure structure, which type is int64
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @return 0 success -1 failed
+ */
+
+int lib_getconfint64(lib_conf_data_t* p_conf, const char* name, long long *value);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+
+int lib_modifyconfint64(lib_conf_data_t* p_conf, const char* name, long long value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+
+int lib_addconfint64(lib_conf_data_t* p_conf, const char *name, long long value);
+
+/*
+ * @brief get the value of item from configure structure, which type is uint
+ * @param [in] p_conf: the pointer of configure struct
+ * @param [in] name: the item name
+ * @param [out] value: the value of name
+ * @return 0 success -1 failed
+ */
+
+int lib_getconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long long *value);
+
+/*
+ * @brief modify the item value in the configure struct
+ * @param[in] p_conf: configure struct 
+ * @param[in] name: the modified item name
+ * @param[in] value:  the value to be set to the item
+ * @return 0 success -1 item isn't exist
+ */
+
+int lib_modifyconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long long value);
+
+/*
+ * @brief add new item to configure struct
+ * @param[in] p_conf: configure strcut
+ * @param[in] name: the item's name
+ * @param[in] value: the item's value
+ * @return 0 success -1 failed
+ */
+
+int lib_addconfuint64(lib_conf_data_t* p_conf, const char *name, unsigned long long value);
 #endif
 

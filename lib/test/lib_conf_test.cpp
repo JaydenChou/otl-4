@@ -164,7 +164,7 @@ TEST(lib_conf, test_lib_writeconf)
 
 }
 
-TEST(lib_conf, test_lib_modifyconfstr)
+TEST(lib_conf, test_lib_conf_api)
 {
 
 	lib_conf_data_t *p_conf;
@@ -174,13 +174,93 @@ TEST(lib_conf, test_lib_modifyconfstr)
 	fprintf(fp, "key1:value1\n");
 	fclose(fp);
 	
+
+	char tstr[WORD_SIZE];
+	
 	int ret = lib_readconf(".", "testconf7", p_conf);
-
 	EXPECT_EQ(0, ret);
 
-	ret = lib_modifyconfstr(p_conf, "key1", "value2");
+	
+	ret = lib_addconfstr(p_conf, "str_add", "v_str_add");
 	EXPECT_EQ(0, ret);
-	EXPECT_STREQ("value2", p_conf->item[0].value);
+
+	ret = lib_getconfstr(p_conf, "str_add", tstr, sizeof(tstr));
+	EXPECT_EQ(0, ret);
+	EXPECT_STREQ("v_str_add", tstr);
+	
+	ret = lib_modifyconfstr(p_conf, "str_add", "v_str_modify");
+	EXPECT_EQ(0, ret);
+
+	ret = lib_getconfstr(p_conf, "str_add", tstr, sizeof(tstr));
+	EXPECT_EQ(0, ret);
+	EXPECT_STREQ("v_str_modify", tstr);
+
+	int int_value;
+	ret = lib_addconfint(p_conf, "int_add", 10);
+	EXPECT_EQ(0, ret);
+
+	ret = lib_getconfint(p_conf, "int_add", &int_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(10, int_value);
+
+	ret = lib_modifyconfint(p_conf, "int_add", 11);
+	EXPECT_EQ(0, ret);
+
+	ret = lib_getconfint(p_conf, "int_add", &int_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(11, int_value);
+
+	float float_value;
+	ret = lib_addconffloat(p_conf, "float_add", 3.14);
+	EXPECT_EQ(0, ret);
+
+	ret = lib_getconffloat(p_conf, "float_add", &float_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_FLOAT_EQ(3.14, float_value);
+
+	ret = lib_modifyconffloat(p_conf, "float_add", 3.15);
+	EXPECT_EQ(0, ret);
+
+	ret = lib_getconffloat(p_conf, "float_add", &float_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_FLOAT_EQ(3.15, float_value);
+
+	unsigned int uint_value;
+	ret = lib_addconfuint(p_conf, "uint_add", 65533);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfuint(p_conf, "uint_add", &uint_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(65533, uint_value);
+	ret = lib_modifyconfuint(p_conf, "uint_add", 65534);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfuint(p_conf, "uint_add", &uint_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(65534, uint_value);
+
+
+	unsigned long long uint64_value;
+	ret = lib_addconfuint64(p_conf, "uint64_add", 2123456789);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfuint64(p_conf, "uint64_add", &uint64_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(2123456789, uint64_value);
+	ret = lib_modifyconfuint64(p_conf, "uint64_add", 2123456788);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfuint64(p_conf, "uint64_add", &uint64_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(2123456788, uint64_value);
+
+	long long int64_value;
+	ret = lib_addconfint64(p_conf, "int64_add", 123456789);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfint64(p_conf, "int64_add", &int64_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(123456789, int64_value);
+	ret = lib_modifyconfint64(p_conf, "int64_add", 123456788);
+	EXPECT_EQ(0, ret);
+	ret = lib_getconfint64(p_conf, "int64_add", &int64_value);
+	EXPECT_EQ(0, ret);
+	EXPECT_EQ(123456788, int64_value);
 
 	remove("./testconf7");
 
