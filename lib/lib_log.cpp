@@ -527,7 +527,7 @@ int lib_openlog(const char* log_path, const char* log_procname, lib_logstat_t *l
 
 	if (NULL == log_fd) {
 		fprintf(stderr, "in lib_log.cpp: no space\n");
-		fprintf(stderr, "in lib_log.cpp: open log fail");
+		fprintf(stderr, "in lib_log.cpp: open log fail\n");
 		return -1;
 	}
 

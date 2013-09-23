@@ -113,14 +113,14 @@ int ss_log_clearnotice();
 unsigned int ss_log_getussecond();
 
 #define SS_LOG_MONITOR(fmt, arg...) do { \
-	lib_writelog(LIB_LOG_WARNING, "---LOG_MONITOR--- [%clogid:%s %c][%creqip:%s %c][%s:%d]" fmt, \
-			SS_SPACE, ss_log_getbasic(SS_LOG_LOGID), SS_SPACE, ss_log_getbasic(SS_LOG_REQIP), SS_SPACE, \
+	lib_writelog(LIB_LOG_WARNING, "---LOG_MONITOR--- [ %clogid:%s %c][ %creqip:%s %c][%s:%d]" fmt, \
+			SS_SPACE, ss_log_getbasic(SS_LOG_LOGID), SS_SPACE, SS_SPACE, ss_log_getbasic(SS_LOG_REQIP), SS_SPACE, \
 			__FILE__, __LINE__, ## arg); \
 }while (0)
 
 #define SS_LOG_FATAL(fmt, arg...) do { \
 	lib_writelog(LIB_LOG_WARNING, "---LOG_MONITOR--- [%clogid:%s %c][%creqiq:%s %c][%s:%d]" fmt, \
-			SS_SPACE, ss_log_getbasic(SS_LOG_LOGID), SS_SPACE, SS_SPACE, ss_log_getbasic(LIB_LOG_REQIP), SS_SPACE, \
+			SS_SPACE, ss_log_getbasic(SS_LOG_LOGID), SS_SPACE, SS_SPACE, ss_log_getbasic(SS_LOG_REQIP), SS_SPACE, \
 			__FILE__, __LINE__, ## arg); \
 	lib_writelog(LIB_LOG_FATAL, "[ %clogid:%s %c][ %creqip:%s %c][%s:%d]" fmt,\
 			SS_SPACE, ss_log_getbasic(SS_LOG_LOGID), SS_SPACE, SS_SPACE, ss_log_getbasic(SS_LOG_REQIP), SS_SPACE, \

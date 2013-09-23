@@ -102,6 +102,11 @@ int ss_log_init(const char *log_path, const char *log_file, int max_size, int lo
 		return -1;
 	}
 
+	log_stat.level = log_level;
+	log_stat.syslog_level = to_syslog;
+	log_stat.spec = spec;
+
+
 	//set the default file path and file 
 	if ('\0' == log_path) {
 		snprintf(real_path, sizeof(real_path), "%s", "./log");
@@ -409,7 +414,7 @@ int ss_log_clearnotice()
 	return 0;
 }
 
-unsigned int ss_log_getusseconf()
+unsigned int ss_log_getussecond()
 {
 	struct timeval curtime;
 	struct timeval *plasttime;
