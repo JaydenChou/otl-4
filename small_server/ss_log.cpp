@@ -124,3 +124,311 @@ int ss_log_init(const char *log_path, const char *log_file, int max_size, int lo
 
 	return notice_specific_init();
 }
+
+int ss_log_initthread(const char *thread_name)
+{
+	if (NULL == thread_name) {
+		return -1;
+	}
+
+	if (lib_openlog_r(thread_name, &log_stat) !=0) {
+		fprintf(stderr, "thread open log failed,"
+				"error[%m] file[%s] line[%d]", __FILE__, __LINE__);
+		return -1;
+	}
+
+	return notice_specific_init();
+}
+
+
+void ss_log_close()
+{
+	lib_closelog(0);
+}
+
+void ss_log_closethread()
+{
+	lib_closelog_r(0);
+}
+
+static int my_strncat(char *dst, const char *src, size_t n)
+{
+	char *d, *end;
+	d = dst;
+	end = dst+n-1;
+
+	for (; d < end && *d != '\0'; ++d);
+
+	for (; d < end; d++, src++) {
+		if (!(*d=*src)) {
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
+static int my_strlen(char *str, size_t len)
+{
+	if (NULL == str) {
+		return 0;
+	}
+
+	char *d = str;
+	int curlen = 0;
+	char *end = str+len-1;
+
+	for(; curlen < len && *d != '\0' && d < end; ++d, ++curlen);
+	return curlen;
+}
+
+unsigned int ss_log_pushnotice(const char *key, const char *fmt, ...)
+{
+	if (NULL == fmt || NULL == key) {
+		return -1;
+	}
+
+	char buff[NOTICE_INFO_MAXLEN];
+	char buffvalue[NOTICE_INFO_MAXLEN];
+	pnotice_info_t pnotice;
+
+	size_t infolen = 0;
+
+	//push key info to buffer
+	buff[0] = '\0';
+	buffvalue[0] = '\0';
+	my_strncat(buff, key, sizeof(buff));
+	if (-1 == my_strncat(buff, ":", sizeof(buff))) {
+		return 0;
+	}
+	buff[NOTICE_INFO_MAXLEN-1] = '\0';
+
+	//push value info to buffer
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffvalue, sizeof(buffvalue), fmt, args);
+	va_end(args);
+
+	if (-1 == my_strncat(buff, buffvalue, sizeof(buff))) {
+		return 0;
+	}
+
+	if (-1 == my_strncat(buff, " ", sizeof(buff))) {
+		return 0;
+	}
+
+	buff[NOTICE_INFO_MAXLEN-1] = '\0';
+
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+	if (NULL == pnotice) {
+		return 0;
+	}
+
+	pnotice->extra_notice_str[pnotice->extra_cur_len] = '\0';
+	if (my_strncat(&pnotice->extra_notice_str[pnotice->extra_cur_len], buff, sizeof(pnotice->extra_notice_str) - pnotice->extra_cur_len) != -1) {
+		infolen = my_strlen(buff, NOTICE_INFO_MAXLEN);
+		pnotice->extra_cur_len += infolen;
+	} else {
+		pnotice->extra_notice_str[pnotice->extra_cur_len] = '\0';
+	}
+
+	return infolen;
+}
+
+unsigned int ss_log_setbasic(ss_notice_type type, const char*fmt, ...)
+{
+	if (type <= SS_LOG_ZERO || type >= SS_LOG_END) {
+		return 0;
+	}
+
+	if (NULL == fmt) {
+		return 0;
+	}
+
+	char buff[NOTICE_INFO_MAXLEN];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buff, sizeof(buff), fmt, args);
+	buff[NOTICE_INFO_MAXLEN-1] = '\0';
+	va_end(args);
+
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+	if (NULL == pnotice) {
+		return 0;
+	}
+
+	size_t ret;
+
+	switch(type) {
+		case SS_LOG_LOGID:
+			strncpy(pnotice->logid_str, buff, sizeof(pnotice->logid_str)-1);
+			pnotice->logid_str[sizeof(pnotice->logid_str)-1] = '\0';
+			ret = strlen(pnotice->logid_str);
+			break;
+		case SS_LOG_REQIP:
+			strncpy(pnotice->requestip_str, buff, sizeof(pnotice->requestip_str)-1);
+			pnotice->requestip_str[sizeof(pnotice->requestip_str)-1] = '\0';
+			ret = strlen(pnotice->requestip_str);
+			break;
+		case SS_LOG_PROCTIME:
+			strncpy(pnotice->processtime_str, buff, sizeof(pnotice->processtime_str)-1);
+			pnotice->processtime_str[sizeof(pnotice->processtime_str)-1] = '\0';
+			ret = strlen(pnotice->processtime_str);
+			break;
+		case SS_LOG_REQSVR:
+			strncpy(pnotice->requestserver_str, buff, sizeof(pnotice->requestserver_str)-1);
+			pnotice->requestserver_str[sizeof(pnotice->requestserver_str)-1] = '\0';
+			ret = strlen(pnotice->requestserver_str);
+			break;
+		case SS_LOG_ERRNO:
+			strncpy(pnotice->errno_str, buff, sizeof(pnotice->errno_str)-1);
+			pnotice->errno_str[sizeof(pnotice->errno_str)-1] = '\0';
+			ret = strlen(pnotice->errno_str);
+			break;
+		case SS_LOG_CMDNO:
+			strncpy(pnotice->cmd_str, buff, sizeof(pnotice->cmd_str)-1);
+			pnotice->cmd_str[sizeof(pnotice->cmd_str)-1] = '\0';
+			ret = strlen(pnotice->cmd_str);
+			break;
+		case SS_LOG_SVRNAME:
+			strncpy(pnotice->svrname_str, buff, sizeof(pnotice->svrname_str)-1);
+			pnotice->svrname_str[sizeof(pnotice->svrname_str)-1] = '\0';
+			ret = strlen(pnotice->svrname_str);
+			break;
+		default:
+			ret = 0;
+			break;
+	}
+
+	return ret;
+
+}
+
+char* ss_log_getbasic(ss_notice_type type)
+{
+	if (type <= SS_LOG_ZERO || type >= SS_LOG_END) {
+		return "";
+	}
+
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+	if (NULL == pnotice) {
+		return "";
+	}
+
+	switch(type) {
+		case SS_LOG_LOGID:
+			return pnotice->logid_str;
+		case SS_LOG_PROCTIME:
+			return pnotice->processtime_str;
+		case SS_LOG_REQIP:
+			return pnotice->requestip_str;
+		case SS_LOG_REQSVR:
+			return pnotice->requestserver_str;
+		case SS_LOG_ERRNO:
+			return pnotice->errno_str;
+		case SS_LOG_CMDNO:
+			return pnotice->cmd_str;
+		case SS_LOG_SVRNAME:
+			return pnotice->svrname_str;
+		default:
+			return "";
+	}
+
+	return "";
+}
+
+unsigned int ss_log_setlogid(unsigned int logid)
+{
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+	if (NULL == pnotice) {
+		return 0;
+	}
+
+	pnotice->logid = logid;
+	
+	return logid;
+}
+
+unsigned int ss_log_getlogid()
+{
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+
+	if (NULL == pnotice) {
+		return 0;
+	}
+
+	return pnotice->logid;
+}
+
+unsigned int ss_log_clearlogid()
+{
+	return ss_log_setlogid(0);
+}
+
+char* ss_log_popnotice()
+{
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+
+	if (NULL == pnotice) {
+		return "";
+	}
+
+	if (pnotice->extra_cur_len >= NOTICE_INFO_MAXLEN) {
+		pnotice->extra_cur_len = NOTICE_INFO_MAXLEN - 1;
+	}
+
+	pnotice->extra_notice_str[pnotice->extra_cur_len] = '\0';
+	pnotice->extra_cur_len = 0;
+
+	return pnotice->extra_notice_str;
+}
+
+
+int ss_log_clearnotice()
+{
+	pnotice_info_t pnotice;
+	pnotice = static_cast<pnotice_info_t>(pthread_getspecific(g_notice_key));
+
+	if (pnotice == NULL) {
+		return -1;
+	}
+
+	pnotice->logid_str[0] = '\0';
+	pnotice->processtime_str[0] = '\0';
+	pnotice->requestip_str[0] = '\0';
+	pnotice->requestserver_str[0] = '\0';
+	pnotice->errno_str[0] = '\0';
+	pnotice->cmd_str[0] = '\0';
+	pnotice->svrname_str[0] = '\0';
+
+	return 0;
+}
+
+unsigned int ss_log_getusseconf()
+{
+	struct timeval curtime;
+	struct timeval *plasttime;
+	long totaltimes;
+	long totaltimeus;
+
+	plasttime = static_cast<struct timeval*>(pthread_getspecific(g_time_key));
+
+	if (NULL == plasttime) {
+		return 0;
+	}
+
+	gettimeofday(&curtime, NULL);
+
+	totaltimes = curtime.tv_sec - plasttime->tv_sec;
+	totaltimeus = curtime.tv_usec - plasttime->tv_usec;
+
+	*plasttime = curtime;
+
+	pthread_setspecific(g_time_key,(const void*)plasttime);
+	return totaltimes*1000000+totaltimeus;
+}
