@@ -2,6 +2,7 @@
 #define __SS_CONF_H__
 
 #include "lib_conf.h"
+#include "ss_log.h"
 //define return value type
 #define SS_CONF_SUCCESS 0				//get configure success
 #define SS_CONF_DEFAULT -1				//not found the item, use default value
@@ -72,5 +73,31 @@ typedef struct _ss_request_svr_t {	//request server configure
  */
 ss_conf_data_t* ss_conf_init(const char* path, const char *filename, const int build = SS_CONF_READCONF, const int num = SS_CONF_DEFAULT_ITEMNUM);
 
+/**
+ * @brief free configure file sturct
+ * @param[in] conf: configure file struct pointer
+ * @return SS_CONF_SUCCESS
+ */
+int ss_conf_close(ss_conf_data_t* conf);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "char *"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] n: the max length to read
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMUTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getnstr(const ss_conf_data_t *conf, const char *name, char *value, const size_t n, const char *comment, const char *default_value = NULL);
 
 #endif
