@@ -1,5 +1,11 @@
 #include "ss_conf.h"
 #include <sys/stat.h>
+#include <regex.h>
+#define SS_CONF_MAIL_REGEX "^[_.0-9a-zA-Z-]*@([_0-9a-zA-Z-]*.)*[_0-9a-zA-Z_]{2,5}$"
+ #define SS_CONF_IP_REGEX   "([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4]"\
+	     "[0-9]|25[0-5])\\.([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\."\
+ "([0-9]|[0-9][0-9]|1[0-9][0-9]|2[0-4][0-9]|25[0-5])\\.([0-9]|[0-9][0-9]"\
+ "|1[0-9][0-9]|2[0-4][0-9]|25[0-5])$"
 
 static bool file_exist(const char *path, const char *name)
 {
@@ -118,6 +124,145 @@ static int load_str(const ss_conf_data_t *conf, const char *name, char *value, s
 	return ret;
 }
 
+static bool is_blank_str(char *str, size_t n)
+{
+	if (str == NULL) {
+		return true;
+	}
+
+	for (int i = 0; i < n && str[i] != '\0'; ++i) {
+		if (str[i] != SPACE || str[i] != TAB || str[i] != '\0') {
+			return false;
+		}
+	}
+	
+	return true;
+}
+
+static int check_str_regex(char *str, const char *regex_str)
+{
+	regex_t re;
+	regmatch_t pmatch[2];
+	if (NULL == str) {
+		return SS_CONF_CHECKFAIL;
+	}
+
+	//if regex_str is null, we think it needn't to be check
+	if (NULL == regex_str) {
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	regcomp(&re, regex_str, REG_EXTENDED);
+
+	if (regexec(&re, str, 2, pmatch, REG_EXTENDED) == 0) {
+		if (pmatch[0].rm_so == 0 && str[pmatch[0].rm_eo] == '\0') {
+			regfree(&re);
+			return SS_CONF_CHECKSUCCESS;
+		}
+	}
+
+	regfree(&re);
+	return SS_CONF_CHECKFAIL;
+}
+
+static int check_str_ipv4(char *str)
+{
+	return check_str_regex(str, SS_CONF_IP_REGEX);
+}
+
+static int check_str_mail(char *str)
+{
+	return check_str_regex(str, SS_CONF_MAIL_REGEX);
+}
+
+static int get_regex_str(char *str, char *regex_str, size_t n)
+{
+	if (NULL == str || NULL == regex_str) {
+	   return SS_CONF_NULL;
+	}
+	
+	char *l = NULL;
+	char *r = NULL;
+	l = strchr(str, '[');
+	if (NULL == l) {
+		return SS_CONF_NULL;
+	}
+    r = strchr(str,']');
+	if (NULL == r) {
+		return SS_CONF_NULL;
+	}
+	if (r > l + n) {
+		return SS_CONF_NULL;
+	}
+
+	strncpy(regex_str, l, r-l-1);
+	regex_str[r-l-1] = '\0';
+	return SS_CONF_SUCCESS;	
+}
+
+static int check_str(const ss_conf_data_t *conf, const char *name, char *value)
+{
+
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	//if range file isn't exist, also check success
+	if (conf->range == NULL) {
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	//get the value string, if not found return check_success
+	int ret;
+	char range_str[WORD_SIZE];
+	char range_check_str[WORD_SIZE];
+
+	ret = lib_getconfnstr(conf->range, name, range_str, sizeof(range_str));
+
+	if (ret == -1) {
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	if (is_blank_str(range_str, sizeof(range_str))) {
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	range_check_str[0] = '\0';
+
+	if (sscanf(range_str, "%s", range_check_str) != 1) {
+		SS_LOG_WARNING("string [%s : %s] range file [%s] format is invalid", name, value, range_str);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	if (!strncasecmp(range_check_str, "ip", 2)) {
+
+		ret = check_str_ipv4(value);
+		if (ret != SS_CONF_CHECKSUCCESS) {
+			SS_LOG_WARNING("[%s : %s] is invalid ip format", name, value);
+		}
+		
+		return ret;
+	} else if (!strncasecmp(range_check_str, "mail", 4)) {
+		ret = check_str_mail(value);
+		if (ret != SS_CONF_CHECKSUCCESS) {
+			SS_LOG_WARNING("[%s : %s] is in valid mail format", name, value);
+		}
+
+		return ret;
+	} else if (!strncasecmp(range_check_str, "regex", 5)) {//other regex check
+		if (get_regex_str(range_str, range_check_str, sizeof(range_check_str) == SS_CONF_CHECKSUCCESS)) {
+			ret = check_str_regex(value, range_check_str);
+			if (ret != SS_CONF_CHECKSUCCESS) {
+				SS_LOG_WARNING("check [%s : %s] with regex [%s] error", name, value, range_check_str);
+			}
+			return ret;
+		}
+	}
+
+	SS_LOG_WARNING("check [%s : %s] range file [%s] format invalid", name, value, range_str);
+	return SS_CONF_CHECKFAIL;
+}
+
 int ss_conf_getnstr(const ss_conf_data_t *conf, const char *conf_name, char *conf_value, const size_t n, const char *comment, const char *default_value)
 {
 	if (NULL == conf || NULL == conf_name || NULL == conf_value || 0 == n) {
@@ -149,12 +294,10 @@ int ss_conf_getnstr(const ss_conf_data_t *conf, const char *conf_name, char *con
 		SS_LOG_WARNING("load string fail, not found[%s]", conf_name);
 		return SS_CONF_LOST;
 	}
-	/*
 
 	if (check_str(conf, conf_name, conf_value) != SS_CONF_CHECKSUCCESS) {
 		return SS_CONF_CHECKFAIL;
 	}
-	*/
 
 	SS_LOG_TRACE("get string value [%s : %s]", conf_name, conf_value);
 

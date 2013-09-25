@@ -700,6 +700,24 @@ int lib_addconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned long l
 {
 	return lib_addconf(p_conf, name, &value, TYPE_UINT64);
 }
+
+int lib_getconfnstr(lib_conf_data_t *p_conf, const char *name, char *value, size_t n)
+{
+	if (NULL == p_conf || NULL == name || NULL == value) {
+		lib_writelog(LIB_LOG_WARNING, "in lib_getconfnstr: param is null");
+		return -1;
+	}
+
+	value[0] = '\0';
+	for (int i = 0; i <  p_conf->num; ++i) {
+		if (!strcmp(name, p_conf->item[i].name)) {
+			strncpy(value, p_conf->item[i].value, n);
+			return 0;
+		}
+	}
+
+	return -1;
+}
 /*
 int main()
 {

@@ -95,7 +95,7 @@ int ss_conf_close(ss_conf_data_t* conf);
  * --SS_CONF_LOST		didn't find configure item
  * --SS_CONF_CHECKSUCCESS	range file check success
  * --SS_CONF_CHECKFAIL	range file check fail
- * --SS_CONF_SETMUTIPLE configure item repeat
+ * --SS_CONF_SETMULTIPLE configure item repeat
  * --SS_CONF_NULL		input param invalid
  */
 int ss_conf_getnstr(const ss_conf_data_t *conf, const char *name, char *value, const size_t n, const char *comment, const char *default_value = NULL);

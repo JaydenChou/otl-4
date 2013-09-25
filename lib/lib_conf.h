@@ -235,5 +235,15 @@ int lib_modifyconfuint64(lib_conf_data_t* p_conf, const char* name, unsigned lon
  */
 
 int lib_addconfuint64(lib_conf_data_t* p_conf, const char *name, unsigned long long value);
+
+/**
+ * @brief get the configure item value, with buff length n
+ * @param[in] conf: the configure struct
+ * @param[in] name: the item name
+ * @param[out] value: the item value
+ * @param[in] n: the size of value
+ * @return 0 success -1 failed
+ */
+int lib_getconfnstr(lib_conf_data_t *conf, const char *name, char* value, size_t n);
 #endif
 
