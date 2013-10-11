@@ -119,4 +119,99 @@ int ss_conf_getnstr(const ss_conf_data_t *conf, const char *name, char *value, c
  */
 int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, const char *comment, const int *default_value = NULL);
 
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "uint"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getuint(const ss_conf_data_t *conf, const char *name, unsigned int *value, const char *comment, const unsigned int *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "long long"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getint64(const ss_conf_data_t *conf, const char *name, long long *value, const char *comment, const long long *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "unsigned long long"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getuint64(const ss_conf_data_t *conf, const char *name, unsigned long long *value, const char *comment, const unsigned long long *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "float"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getfloat(const ss_conf_data_t *conf, const char *name, float *value, const char *comment, const float *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "ss_svr_t"
+ * @param[in] conf: configure struct pointer
+ * @param[in] product_name: product name, it can be NULL
+ * @param[in] module_name: the module name, it can not be NULL
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_svr_t *value, const char *comment);
+
 #endif

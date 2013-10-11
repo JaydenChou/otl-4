@@ -411,7 +411,8 @@ int ss_conf_close(ss_conf_data_t *conf)
 	return SS_CONF_SUCCESS;
 }
 
-static int check_int_range(ss_conf_data_t *conf, const char *name, int num)
+#define CHECK_VALUE(num, min, max) (((num) >= (min) && (num) <= (max)) ? 0 : 1 )
+static int check_int_range(const ss_conf_data_t *conf, const char *name, int num)
 {
 	if (NULL == conf || NULL == name) {
 		return SS_CONF_NULL;
@@ -423,8 +424,27 @@ static int check_int_range(ss_conf_data_t *conf, const char *name, int num)
 	}
 
 	int ret;
+	int l;
+	int r;
 	char range_str[WORD_SIZE];
-	ret = ss_conf_getnstr(conf, name, range_str, sizeof(range_str));
+	ret = lib_getconfstr(conf->range, name, range_str, sizeof(range_str));
+
+	if (-1 == ret) {
+		SS_LOG_WARNING("no found [%s] range check item", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	if (sscanf(range_str, "range [%d %d]", &l, &r) == 2) {
+		if (CHECK_VALUE(num, l, r) == 0) {
+			return SS_CONF_CHECKSUCCESS;
+		} else {
+			SS_LOG_WARNING("int [%s] load error, [%d] overflow range [%d %d]", name, num, l, r);
+			return SS_CONF_CHECKFAIL;
+		}
+	}
+
+	SS_LOG_WARNING("int [%s] load error, [%d] is invalid format", name, num);
+	return SS_CONF_CHECKFAIL;
 
 }
 
@@ -436,7 +456,7 @@ int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, con
 	}
 
 	if (conf->build != SS_CONF_READCONF) {
-		if (write_commet(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
 			if (default_value != NULL) {
 				fprintf(conf->conf_file, "#[default configure[int], %s : %d]\n%s : %d", name, *default_value, name, *default_value);
 				return SS_CONF_DEFAULT;
@@ -471,13 +491,13 @@ int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, con
 	long num;
 	char *endptr;
 	errno = 0;
-	num = strtol(conf_value_str, endptr, 10);
+	num = strtol(conf_value_str, &endptr, 10);
 	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
 		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
 		return SS_CONF_OVERFLOW;
 	}
 
-	if (!is_blank_str(endpts, sizeof(conf_value_str))) {
+	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
 		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
 		return SS_CONF_CHECKFAIL;
 	}
@@ -491,4 +511,379 @@ int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, con
 	return SS_CONF_SUCCESS;
 
 
+}
+
+static int check_uint_range(const ss_conf_data_t *conf, const char *name, unsigned num)
+{
+
+	if (NULL == conf || NULL == name) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == conf->range) {
+		SS_LOG_WARNING("no found configure range file, no check range[%s]", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	int ret;
+	unsigned int l;
+	unsigned int r;
+	char range_str[WORD_SIZE];
+	ret = lib_getconfstr(conf->range, name, range_str, sizeof(range_str));
+
+	if (-1 == ret) {
+		SS_LOG_WARNING("no found [%s] range check item", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	if (sscanf(range_str, "range [%u %u]", &l, &r) == 2) {
+		if (CHECK_VALUE(num, l, r) == 0) {
+			return SS_CONF_CHECKSUCCESS;
+		} else {
+			SS_LOG_WARNING("int [%s] load error, [%u] overflow range [%u %u]", name, num, l, r);
+			return SS_CONF_CHECKFAIL;
+		}
+	}
+
+	SS_LOG_WARNING("int [%s] load error, [%u] is invalid format", name, num);
+	return SS_CONF_CHECKFAIL;
+
+}
+
+int ss_conf_getuint(const ss_conf_data_t* conf, const char *name, unsigned int *value, const char *comment, const unsigned int *default_value)
+{
+
+
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (conf->build != SS_CONF_READCONF) {
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			if (default_value != NULL) {
+				fprintf(conf->conf_file, "#[default configure[uint], [%s : %u]\n%s : %u", name, *default_value, name, *default_value);
+				return SS_CONF_DEFAULT;
+			} else {
+				fprintf(conf->conf_file, "%s : ", name);
+			}
+			return SS_CONF_SUCCESS;
+		}
+		return SS_CONF_NULL;
+	}
+
+	*value = 0;
+	char conf_value_str[WORD_SIZE];
+
+	int ret;
+
+	ret = load_str(conf, name, conf_value_str, sizeof(conf_value_str));
+	if (SS_CONF_LOST == ret) {
+		if (default_value != NULL) {
+			*value = *default_value;
+			SS_LOG_WARNING("int [%s] no found, use default value [%u]", name, *default_value);
+			return SS_CONF_DEFAULT;
+		}
+		SS_LOG_WARNING("load uint fail, no found[%s]", name);
+		return SS_CONF_LOST;
+	}
+
+	if (is_blank_str(conf_value_str, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] is empty", name);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	unsigned long num;
+	char *endptr;
+	errno = 0;
+	num = strtoul(conf_value_str, &endptr, 10);
+	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
+		return SS_CONF_OVERFLOW;
+	}
+
+	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
+		return SS_CONF_CHECKFAIL;
+	}
+	
+	if (check_uint_range(conf, name, num) != SS_CONF_CHECKSUCCESS) {
+		return SS_CONF_OVERFLOW;
+	}
+
+	*value = (unsigned int)num;
+	SS_LOG_TRACE("get int value [%s : %u]", name, *value);
+	return SS_CONF_SUCCESS;
+
+}
+
+static int check_int64_range(const ss_conf_data_t *conf, const char *name, long long num)
+{
+
+	if (NULL == conf || NULL == name) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == conf->range) {
+		SS_LOG_WARNING("no found configure range file, no check range[%s]", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	int ret;
+	long long l;
+	long long r;
+	char range_str[WORD_SIZE];
+	ret = lib_getconfstr(conf->range, name, range_str, sizeof(range_str));
+
+	if (-1 == ret) {
+		SS_LOG_WARNING("no found [%s] range check item", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	if (sscanf(range_str, "range [%lld %lld]", &l, &r) == 2) {
+		if (CHECK_VALUE(num, l, r) == 0) {
+			return SS_CONF_CHECKSUCCESS;
+		} else {
+			SS_LOG_WARNING("int [%s] load error, [%lld] overflow range [%lld %lld]", name, num, l, r);
+			return SS_CONF_CHECKFAIL;
+		}
+	}
+
+	SS_LOG_WARNING("int [%s] load error, [%lld] is invalid format", name, num);
+	return SS_CONF_CHECKFAIL;
+}
+
+int ss_conf_getint64(const ss_conf_data_t *conf, const char *name, long long *value, const char *comment, const long long *default_value)
+{
+
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (conf->build != SS_CONF_READCONF) {
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			if (default_value != NULL) {
+				fprintf(conf->conf_file, "#[default configure[uint64], [%s : %lld]\n%s : %lld", name, *default_value, name, *default_value);
+				return SS_CONF_DEFAULT;
+			} else {
+				fprintf(conf->conf_file, "%s : ", name);
+			}
+			return SS_CONF_SUCCESS;
+		}
+		return SS_CONF_NULL;
+	}
+
+	*value = 0;
+	char conf_value_str[WORD_SIZE];
+
+	int ret;
+
+	ret = load_str(conf, name, conf_value_str, sizeof(conf_value_str));
+	if (SS_CONF_LOST == ret) {
+		if (default_value != NULL) {
+			*value = *default_value;
+			SS_LOG_WARNING("int [%s] no found, use default value [%lld]", name, *default_value);
+			return SS_CONF_DEFAULT;
+		}
+		SS_LOG_WARNING("load uint fail, no found[%s]", name);
+		return SS_CONF_LOST;
+	}
+
+	if (is_blank_str(conf_value_str, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] is empty", name);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	long long num;
+	char *endptr;
+	errno = 0;
+	num = strtoll(conf_value_str, &endptr, 10);
+	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
+		return SS_CONF_OVERFLOW;
+	}
+
+	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
+		return SS_CONF_CHECKFAIL;
+	}
+	
+	if (check_int64_range(conf, name, num) != SS_CONF_CHECKSUCCESS) {
+		return SS_CONF_OVERFLOW;
+	}
+
+	*value = num;
+	SS_LOG_TRACE("get int value [%s : %lld]", name, *value);
+	return SS_CONF_SUCCESS;
+
+}
+
+static int check_uint64_range(const ss_conf_data_t *conf, const char *name, unsigned long long num)
+{
+
+	if (NULL == conf || NULL == name) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == conf->range) {
+		SS_LOG_WARNING("no found configure range file, no check range[%s]", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	int ret;
+	unsigned long long l;
+	unsigned long long r;
+	char range_str[WORD_SIZE];
+	ret = lib_getconfstr(conf->range, name, range_str, sizeof(range_str));
+
+	if (-1 == ret) {
+		SS_LOG_WARNING("no found [%s] range check item", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	if (sscanf(range_str, "range [%llu %llu]", &l, &r) == 2) {
+		if (CHECK_VALUE(num, l, r) == 0) {
+			return SS_CONF_CHECKSUCCESS;
+		} else {
+			SS_LOG_WARNING("int [%s] load error, [%llu] overflow range [%llu %llu]", name, num, l, r);
+			return SS_CONF_CHECKFAIL;
+		}
+	}
+
+	SS_LOG_WARNING("int [%s] load error, [%llu] is invalid format", name, num);
+	return SS_CONF_CHECKFAIL;
+}
+
+int ss_conf_getuint64(const ss_conf_data_t *conf, const char *name, unsigned long long *value, const char *comment, const unsigned long long *default_value)
+{
+
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (conf->build != SS_CONF_READCONF) {
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			if (default_value != NULL) {
+				fprintf(conf->conf_file, "#[default configure[uint64], [%s : %llu]\n%s : %llu", name, *default_value, name, *default_value);
+				return SS_CONF_DEFAULT;
+			} else {
+				fprintf(conf->conf_file, "%s : ", name);
+			}
+			return SS_CONF_SUCCESS;
+		}
+		return SS_CONF_NULL;
+	}
+
+	*value = 0;
+	char conf_value_str[WORD_SIZE];
+
+	int ret;
+
+	ret = load_str(conf, name, conf_value_str, sizeof(conf_value_str));
+	if (SS_CONF_LOST == ret) {
+		if (default_value != NULL) {
+			*value = *default_value;
+			SS_LOG_WARNING("int [%s] no found, use default value [%lld]", name, *default_value);
+			return SS_CONF_DEFAULT;
+		}
+		SS_LOG_WARNING("load uint fail, no found[%s]", name);
+		return SS_CONF_LOST;
+	}
+
+	if (is_blank_str(conf_value_str, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] is empty", name);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	unsigned long long num;
+	char *endptr;
+	errno = 0;
+	num = strtoull(conf_value_str, &endptr, 10);
+	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
+		return SS_CONF_OVERFLOW;
+	}
+
+	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
+		return SS_CONF_CHECKFAIL;
+	}
+	
+	if (check_uint64_range(conf, name, num) != SS_CONF_CHECKSUCCESS) {
+		return SS_CONF_OVERFLOW;
+	}
+
+	*value = num;
+	SS_LOG_TRACE("get int value [%s : %llu]", name, *value);
+	return SS_CONF_SUCCESS;
+
+}
+
+int  ss_conf_getfloat(const ss_conf_data_t *conf, const char *name, float *value, const char *comment, const float *default_value)
+{
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (conf->build != SS_CONF_READCONF) {
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			if (default_value != NULL) {
+				fprintf(conf->conf_file, "#[default configure[float], [%s : %f]\n%s : %f", name, *default_value, name, *default_value);
+				return SS_CONF_DEFAULT;
+			} else {
+				fprintf(conf->conf_file, "%s : ", name);
+			}
+			return SS_CONF_SUCCESS;
+		}
+		return SS_CONF_NULL;
+	}
+
+	*value = 0;
+	char conf_value_str[WORD_SIZE];
+
+	int ret;
+
+	ret = load_str(conf, name, conf_value_str, sizeof(conf_value_str));
+	if (SS_CONF_LOST == ret) {
+		if (default_value != NULL) {
+			*value = *default_value;
+			SS_LOG_WARNING("int [%s] no found, use default value [%f]", name, *default_value);
+			return SS_CONF_DEFAULT;
+		}
+		SS_LOG_WARNING("load uint fail, no found[%s]", name);
+		return SS_CONF_LOST;
+	}
+
+	if (is_blank_str(conf_value_str, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] is empty", name);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	float num;
+	char *endptr;
+	errno = 0;
+	num = strtod(conf_value_str, &endptr);
+	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
+		return SS_CONF_OVERFLOW;
+	}
+
+	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
+		return SS_CONF_CHECKFAIL;
+	}
+	
+	if (check_uint64_range(conf, name, num) != SS_CONF_CHECKSUCCESS) {
+		return SS_CONF_OVERFLOW;
+	}
+
+	*value = num;
+	SS_LOG_TRACE("get int value [%s : %f]", name, *value);
+	return SS_CONF_SUCCESS;
+
+}
+
+
+int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_svr_t *value, const char *comment)
+{
+	return SS_CONF_SUCCESS;
 }
