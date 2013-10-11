@@ -410,3 +410,85 @@ int ss_conf_close(ss_conf_data_t *conf)
 
 	return SS_CONF_SUCCESS;
 }
+
+static int check_int_range(ss_conf_data_t *conf, const char *name, int num)
+{
+	if (NULL == conf || NULL == name) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == conf->range) {
+		SS_LOG_WARNING("no found configure range file, no check range[%s]", name);
+		return SS_CONF_CHECKSUCCESS;
+	}
+
+	int ret;
+	char range_str[WORD_SIZE];
+	ret = ss_conf_getnstr(conf, name, range_str, sizeof(range_str));
+
+}
+
+int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, const char *comment, const int *default_value)
+{
+
+	if (NULL == conf || NULL == name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (conf->build != SS_CONF_READCONF) {
+		if (write_commet(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			if (default_value != NULL) {
+				fprintf(conf->conf_file, "#[default configure[int], %s : %d]\n%s : %d", name, *default_value, name, *default_value);
+				return SS_CONF_DEFAULT;
+			} else {
+				fprintf(conf->conf_file, "%s : ", name);
+			}
+			return SS_CONF_SUCCESS;
+		}
+		return SS_CONF_NULL;
+	}
+
+	*value = 0;
+	char conf_value_str[WORD_SIZE];
+
+	int ret;
+
+	ret = load_str(conf, name, conf_value_str, sizeof(conf_value_str));
+	if (SS_CONF_LOST == ret) {
+		if (default_value != NULL) {
+			*value = *default_value;
+			SS_LOG_WARNING("int [%s] no found, use default value [%d]", name, *default_value);
+			return SS_CONF_DEFAULT;
+		}
+		return SS_CONF_LOST;
+	}
+
+	if (is_blank_str(conf_value_str, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] is empty", name);
+		return SS_CONF_CHECKFAIL;
+	}
+
+	long num;
+	char *endptr;
+	errno = 0;
+	num = strtol(conf_value_str, endptr, 10);
+	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
+		return SS_CONF_OVERFLOW;
+	}
+
+	if (!is_blank_str(endpts, sizeof(conf_value_str))) {
+		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
+		return SS_CONF_CHECKFAIL;
+	}
+	
+	if (check_int_range(conf, name, num) != SS_CONF_CHECKSUCCESS) {
+		return SS_CONF_OVERFLOW;
+	}
+
+	*value = (int)num;
+	SS_LOG_TRACE("get int value [%s : %d]", name, *value);
+	return SS_CONF_SUCCESS;
+
+
+}

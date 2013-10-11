@@ -100,4 +100,23 @@ int ss_conf_close(ss_conf_data_t* conf);
  */
 int ss_conf_getnstr(const ss_conf_data_t *conf, const char *name, char *value, const size_t n, const char *comment, const char *default_value = NULL);
 
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "int"
+ * @param[in] conf: configure struct pointer
+ * @param[in] conf_name: the configure item name
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @param[in] default_value: the configure item default value, it is NULL as usual, means that don't use default value
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getint(const ss_conf_data_t *conf, const char *name, int *value, const char *comment, const int *default_value = NULL);
+
 #endif
