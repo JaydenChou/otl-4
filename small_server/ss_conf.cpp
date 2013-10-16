@@ -885,5 +885,92 @@ int  ss_conf_getfloat(const ss_conf_data_t *conf, const char *name, float *value
 
 int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_svr_t *value, const char *comment)
 {
+
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == value && SS_CONF_READCONF == conf->build) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == module_name) {
+		SS_LOG_WARNING("[ss_conf_getsvr] module name is NULL");
+		return SS_CONF_NULL;
+	}
+
+	if (SS_CONF_READCONF != conf->bulid) {
+		if (write_comment(conf->conf_file,"") != SS_CONF_SUCCESS) {
+			return SS_CONF_NULL;
+		}
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			return SS_CONF_NULL;
+		}
+	}
+	char conf_name[WORD_SIZE];
+	char svr_name[WORD_SIZE];
+	int ret;
+	int item_ret;
+	unsigned int tmp;
+	char str_tmp[WORD_SIZE];
+
+	//merge product name and module name
+	if (NULL != product_name) {
+		snprintf(conf_name, sizeof(conf_name), "%s_%s", product_name, module_name);
+	} else {
+		snprintf(conf_name, sizeof(conf_name), "%s", module_name);
+	}
+	//to be use show server name
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_name", conf_name);
+	item_ret = ss_conf_getnstr(conf, svr_name, str_tmp, sizeof(str_cmp), "server name");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		snprintf(value->svr_name, sizeof(value->svr_name), "%s", str_tmp);
+	}
+
+	//get port
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_port", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "started sever port");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->svr_port = tmp;
+	}
+
+	//get read timeout
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_readtimeout", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "read timeout");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->read_timeout = tmp;
+	}
+
+	//get write timeout
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_wirtetimeout", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "write timeout");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->write_timeout = tmp;
+	}
+
+	//get thread num
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_threadnum", conf_name);
+	item_ret = ss_conf_getunit(conf, svr_name, &tmp, "started thread num");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->thread_num = tmp;
+	}
+
+
 	return SS_CONF_SUCCESS;
 }
