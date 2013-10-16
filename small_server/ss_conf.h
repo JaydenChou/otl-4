@@ -43,7 +43,7 @@ typedef struct _ss_svr_t {			//server can support configure
 	u_int read_timeout;				//read time out
 	u_int write_timeout;			//write time out
 	u_int threadnum;				//thead number
-	u_int connet_type;				//0 short connet , !0 long connect
+	u_int connect_type;				//0 short connet , !0 long connect
 	u_int server_type;				//the pool type, as ss_server configure
 	u_int queue_size;				//the length of queue, when pool is cpool , it is valid
 	u_int sock_size;				//the length of sock, when pool is cpool, it is valid
@@ -213,5 +213,24 @@ int ss_conf_getfloat(const ss_conf_data_t *conf, const char *name, float *value,
  * --SS_CONF_NULL		input param invalid
  */
 int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_svr_t *value, const char *comment);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "ss_svr_t"
+ * @param[in] conf: configure struct pointer
+ * @param[in] product_name: product name, it can be NULL
+ * @param[in] module_name: the module name, it can not be NULL
+ * @param[out] conf_value: the configure item value
+ * @param[in] comment: the configure item introduction, in order to write configure
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getreqsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_request_svr_t *value, const char *comment);
 
 #endif

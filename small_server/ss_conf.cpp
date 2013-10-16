@@ -899,7 +899,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 		return SS_CONF_NULL;
 	}
 
-	if (SS_CONF_READCONF != conf->bulid) {
+	if (SS_CONF_READCONF != conf->build) {
 		if (write_comment(conf->conf_file,"") != SS_CONF_SUCCESS) {
 			return SS_CONF_NULL;
 		}
@@ -909,7 +909,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 	}
 	char conf_name[WORD_SIZE];
 	char svr_name[WORD_SIZE];
-	int ret;
+	int ret = SS_CONF_SUCCESS;
 	int item_ret;
 	unsigned int tmp;
 	char str_tmp[WORD_SIZE];
@@ -922,7 +922,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 	}
 	//to be use show server name
 	snprintf(svr_name, sizeof(svr_name), "_svr_%s_name", conf_name);
-	item_ret = ss_conf_getnstr(conf, svr_name, str_tmp, sizeof(str_cmp), "server name");
+	item_ret = ss_conf_getnstr(conf, svr_name, str_tmp, sizeof(str_tmp), "server name");
 	if (item_ret != SS_CONF_SUCCESS) {
 		ret = item_ret;
 	}
@@ -937,7 +937,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 		ret = item_ret;
 	}
 	if (value != NULL && SS_CONF_READCONF == conf->build) {
-		value->svr_port = tmp;
+		value->port = tmp;
 	}
 
 	//get read timeout
@@ -963,14 +963,264 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 
 	//get thread num
 	snprintf(svr_name, sizeof(svr_name), "_svr_%s_threadnum", conf_name);
-	item_ret = ss_conf_getunit(conf, svr_name, &tmp, "started thread num");
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "started thread num");
 	if (item_ret != SS_CONF_SUCCESS) {
 		ret = item_ret;
 	}
 	if (value != NULL && SS_CONF_READCONF == conf->build) {
-		value->thread_num = tmp;
+		value->threadnum = tmp;
 	}
 
+	//get connect type
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_connecttype",conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "connecttype");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->connect_type = tmp;
+	}
 
+	//get pool type
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_servertype", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "server type");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->server_type = tmp;
+	}
+
+	//get cpool size default = 100
+	unsigned int temp_default = 100;
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_queuesize", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "queue size", &temp_default);
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->queue_size = tmp;
+	}
+
+	//get sock size default = 500
+	temp_default = 500;
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_socksize", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "sock size", &temp_default);
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->sock_size = tmp;
+	}
+
+	//for beauty
+	if(SS_CONF_READCONF != conf->build) {
+		if (fputc('\n',conf->conf_file) == EOF) {
+			return SS_CONF_NULL;
+		}
+	}
+		
 	return SS_CONF_SUCCESS;
+}
+
+/*
+ * @brief parse ip list, eg: 127.0.0.1 172.18.120.154/172.18.120.155
+ * @param[in] svr_name: server name, for log
+ * @param[in] src: ip string
+ * @param[out] svr_ips: ss_svr_ipt, ss_svr_ip's ip list
+ * @param[out] num: ip list num
+ */
+int parse_iplist(const char *svr_name, const char *src, ss_svr_ip_t svr_ips[], unsigned int *num)
+{
+	if (NULL == src || NULL == num) {
+		return SS_CONF_NULL;
+	}
+
+	*num = 0;
+	int i = 0;
+	int j;
+	int l;
+	int r;
+	while(*src) {
+		if (i >= SS_CONF_IPMAX) {
+			SS_LOG_WARNING("[%s] ip too much, must <= %u", svr_name, SS_CONF_IPMAX);
+		return SS_CONF_CHECKFAIL;
+		}
+
+		l = strspn(src, " \t");
+		src += l;
+		j = 0;
+		svr_ips[i].num = 0;
+		while(*src) {
+			r = strcspn(src, " \t/");
+			if (r >= SS_CONF_IPLENMAX) {
+				SS_LOG_WARNING("[%s] ip %*s too long", svr_name, r, src);
+				return SS_CONF_CHECKFAIL;
+			}
+			strncpy(svr_ips[i].name[j], src, r);
+			svr_ips[i].name[j][r] = '\0';
+			if (check_str_ipv4(svr_ips[i].name[j]) != SS_CONF_CHECKSUCCESS) {
+				return SS_CONF_CHECKFAIL;
+			}
+			src += r;
+			++j;
+			if (*src != '/') break;
+			++src;
+		}
+		++i;
+		svr_ips[i].num = j;
+	}
+
+	*num = i;
+	return SS_CONF_SUCCESS;
+		
+}
+
+int ss_conf_getreqsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_request_svr_t *value, const char *comment)
+{
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == value && SS_CONF_READCONF == conf->build) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == module_name) {
+		return SS_CONF_NULL;
+	}
+
+	if (SS_CONF_READCONF != conf->build) {
+		if (write_comment(conf->conf_file,"") != SS_CONF_SUCCESS) {
+			return SS_CONF_NULL;
+		}
+
+		if (write_comment(conf->conf_file, comment) != SS_CONF_SUCCESS) {
+			return SS_CONF_NULL;
+		}
+	}
+
+	int ret = SS_CONF_SUCCESS;
+	char conf_name[WORD_SIZE];
+	if (NULL == product_name) {
+		snprintf(conf_name, sizeof(conf_name), "%s", module_name);
+	} else {
+		snprintf(conf_name, sizeof(conf_name), "%s_%s", product_name, module_name);
+	}
+	char svr_name[WORD_SIZE];
+
+	//the name of server
+	int item_ret;
+	unsigned int tmp;
+	char str_tmp[WORD_SIZE];
+
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_name", conf_name);
+	item_ret = ss_conf_getnstr(conf, svr_name, str_tmp, sizeof(str_tmp), "request server name");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		snprintf(value->svr_name, sizeof(value->svr_name), "%s", str_tmp);
+	}
+
+	//get ip_list
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_ip", conf_name);
+	item_ret = ss_conf_getnstr(conf, svr_name, str_tmp, sizeof(str_tmp), "request ip list");
+	if (item_ret != SS_CONF_SUCCESS) {
+		item_ret = ret;
+	} else {
+		item_ret = parse_iplist(svr_name, str_tmp,value->ip_list, &value->num);
+		if (item_ret != SS_CONF_SUCCESS) {
+			ret = item_ret;
+		}
+	}
+
+	//get port
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_port", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "server port");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->port = tmp;
+	}
+
+	//get read timeout
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_readtimeout", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "server read timeout");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->read_timeout = tmp;
+	}
+
+	//get write timeout
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_writetimeout", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "server write  timeout");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->write_timeout = tmp;
+	}
+
+	//get connect timeout
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_connecttimeout", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "connect timeout");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->connect_timeout = tmp;
+	}
+
+	//get max connect num
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_maxconnect", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "max connect");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->max_connect = tmp;
+	}
+
+	//get retry time
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_retry", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "retry time");
+	if (item_ret != SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->retry = tmp;
+	}
+
+	//get connect type
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_connecttype", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "connect type");
+	if (item_ret = SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->connect_type = tmp;
+	}
+
+	//get linger
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_linger", conf_name);
+	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "linger");
+	if (item_ret == SS_CONF_SUCCESS) {
+		ret = item_ret;
+	}
+	if (value != NULL && SS_CONF_READCONF == conf->build) {
+		value->linger = tmp;
+	}
+
+	if (SS_CONF_READCONF != conf->build) {
+		if (fputc('\n', conf->conf_file) == EOF) {
+			return SS_CONF_NULL;
+		}
+	}
+
+	return ret;
 }
