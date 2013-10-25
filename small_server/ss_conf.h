@@ -233,4 +233,157 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
  */
 int ss_conf_getreqsvr(const ss_conf_data_t *conf, const char *product_name, const char *module_name, ss_request_svr_t *value, const char *comment);
 
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "char *"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] n: the read max size
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getonenstr(const char *path, const char *filename, const char *conf_name, char *value, const size_t n, const char *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "int"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getoneint(const char *path, const char *filename, const char *conf_name, int *value, const int *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "uint"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getoneuint(const char *path, const char *filename, const char *conf_name, unsigned int *value, const unsigned int *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "int 64"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getoneint64(const char *path, const char *filename, const char *conf_name, long long *value, const long long *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "unsigned long long"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getoneuint64(const char *path, const char *filename, const char *conf_name, unsigned long long *value, const unsigned long long *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "float"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getonefloat(const char *path, const char *filename, const char *conf_name, float *value, const float *default_value = NULL);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "ss_svr_t"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getonesvr(const char *path, const char *filename, const char *product_name, const char *module_name, ss_svr_t *value);
+
+/**
+ * @brief read configuration item value in the configuration infomation structure, and examined by range file, with the buffer length limit, value is of type "ss_request_svr_t"
+ * @param[in] path: configure file path
+ * @param[in] filename: configure file name
+ * @param[in] conf_name: the name of get
+ * @param[out] conf_value: the configure item value
+ * @param[in] default_value: when it doesn't find out! replace with default_value. if it is NULL. it means doesn't no using.
+ * @return 
+ * --SS_CONF_SUCCESS	success
+ * --SS_CONF_DEFAULT	failed, use default value
+ * --SS_CONF_OVERFLOW	the numberic type overflow
+ * --SS_CONF_LOST		didn't find configure item
+ * --SS_CONF_CHECKSUCCESS	range file check success
+ * --SS_CONF_CHECKFAIL	range file check fail
+ * --SS_CONF_SETMULTIPLE configure item repeat
+ * --SS_CONF_NULL		input param invalid
+ */
+int ss_conf_getonereqsvr(const char *path, const char *filename, const char *product_name, const char *module_name, ss_request_svr_t *value);
+
 #endif

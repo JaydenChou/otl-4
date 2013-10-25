@@ -1,0 +1,29 @@
+#read only conf
+str : string
+int : 10
+uint : 65534
+int64 : 123456789
+uint64 : 987654321
+float : 1234.5
+
+_svr_test_name : test
+_svr_test_port : 80
+_svr_test_readtimeout : 2000
+_svr_test_writetimeout : 2000
+_svr_test_threadnum : 100
+_svr_test_connecttype : 0
+_svr_test_servertype : 1
+_svr_test_queuesize : 100
+_svr_test_socksize : 100
+
+_svr_request_name : test
+_svr_request_port : 80
+_svr_request_readtimeout : 1000
+_svr_request_writetimeout : 1000
+_svr_request_num : 4
+_svr_request_connecttimeout : 1000
+_svr_request_maxconnect : 10
+_svr_request_retry : 3
+_svr_request_connecttype : 0
+_svr_request_linger : 0
+_svr_request_ip : 192.168.0.1/192.168.1.1	172.0.1.1	255.255.255.0

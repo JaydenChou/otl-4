@@ -596,7 +596,7 @@ int ss_conf_getuint(const ss_conf_data_t* conf, const char *name, unsigned int *
 	char *endptr;
 	errno = 0;
 	num = strtoul(conf_value_str, &endptr, 10);
-	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+	if (errno == ERANGE || num < 0|| num > UINT_MAX) {
 		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
 		return SS_CONF_OVERFLOW;
 	}
@@ -684,7 +684,7 @@ int ss_conf_getint64(const ss_conf_data_t *conf, const char *name, long long *va
 			SS_LOG_WARNING("int [%s] no found, use default value [%lld]", name, *default_value);
 			return SS_CONF_DEFAULT;
 		}
-		SS_LOG_WARNING("load uint fail, no found[%s]", name);
+		SS_LOG_WARNING("load int64 fail, no found[%s]", name);
 		return SS_CONF_LOST;
 	}
 
@@ -798,10 +798,9 @@ int ss_conf_getuint64(const ss_conf_data_t *conf, const char *name, unsigned lon
 	char *endptr;
 	errno = 0;
 	num = strtoull(conf_value_str, &endptr, 10);
-	if (errno == ERANGE || num < INT_MIN || num > INT_MAX) {
+	if (errno == ERANGE || num < 0 || num > UINT_MAX) {
 		SS_LOG_WARNING("int [%s] load error, [%s] overflow", name, conf_value_str);
-		return SS_CONF_OVERFLOW;
-	}
+		return SS_CONF_OVERFLOW; }
 
 	if (!is_blank_str(endptr, sizeof(conf_value_str))) {
 		SS_LOG_WARNING("int [%s] load error, [%s] is invalid", name, conf_value_str);
@@ -930,6 +929,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 		snprintf(value->svr_name, sizeof(value->svr_name), "%s", str_tmp);
 	}
 
+	
 	//get port
 	snprintf(svr_name, sizeof(svr_name), "_svr_%s_port", conf_name);
 	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "started sever port");
@@ -952,7 +952,7 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 	}
 
 	//get write timeout
-	snprintf(svr_name, sizeof(svr_name), "_svr_%s_wirtetimeout", conf_name);
+	snprintf(svr_name, sizeof(svr_name), "_svr_%s_writetimeout", conf_name);
 	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "write timeout");
 	if (item_ret != SS_CONF_SUCCESS) {
 		ret = item_ret;
@@ -1019,8 +1019,9 @@ int ss_conf_getsvr(const ss_conf_data_t *conf, const char *product_name, const c
 			return SS_CONF_NULL;
 		}
 	}
+	printf("*********************ret : %d\n------" ,ret);
 		
-	return SS_CONF_SUCCESS;
+	return ret;
 }
 
 /*
@@ -1067,8 +1068,8 @@ int parse_iplist(const char *svr_name, const char *src, ss_svr_ip_t svr_ips[], u
 			if (*src != '/') break;
 			++src;
 		}
-		++i;
 		svr_ips[i].num = j;
+		++i;
 	}
 
 	*num = i;
@@ -1199,7 +1200,7 @@ int ss_conf_getreqsvr(const ss_conf_data_t *conf, const char *product_name, cons
 	//get connect type
 	snprintf(svr_name, sizeof(svr_name), "_svr_%s_connecttype", conf_name);
 	item_ret = ss_conf_getuint(conf, svr_name, &tmp, "connect type");
-	if (item_ret = SS_CONF_SUCCESS) {
+	if (item_ret != SS_CONF_SUCCESS) {
 		ret = item_ret;
 	}
 	if (value != NULL && SS_CONF_READCONF == conf->build) {
@@ -1223,4 +1224,175 @@ int ss_conf_getreqsvr(const ss_conf_data_t *conf, const char *product_name, cons
 	}
 
 	return ret;
+}
+
+int ss_conf_getonenstr(const char *path, const char *filename, const char *conf_name, char *value, const size_t n, const char *default_value)
+{
+	ss_conf_data_t *conf;
+	int ret;
+	if (NULL == value || NULL == conf_name) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	ret = ss_conf_getnstr(conf, conf_name, value , n, NULL, default_value);
+	ss_conf_close(conf);
+
+	return ret;
+}
+
+int ss_conf_getoneint(const char *path, const char *filename, const char *conf_name, int *value, const int *default_value)
+{
+	if (NULL == conf_name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+	   return SS_CONF_NULL;
+	}
+
+	int ret = ss_conf_getint(conf, conf_name, value, NULL, default_value);
+
+	ss_conf_close(conf);
+
+	return ret;	
+}
+
+int ss_conf_getoneuint(const char *path, const char *filename, const char *conf_name, unsigned int *value, const unsigned int *default_value)
+{
+	if (NULL == conf_name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	int ret = ss_conf_getuint(conf, conf_name, value, NULL, default_value);
+	ss_conf_close(conf);
+	
+	return ret;
+}
+
+int ss_conf_getoneint64(const char *path, const char *filename, const char *conf_name, long long *value, const long long *default_value) 
+{
+	if (NULL == conf_name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	int ret = ss_conf_getint64(conf, conf_name, value, NULL, default_value);
+	ss_conf_close(conf);
+
+	return ret;
+}
+
+int ss_conf_getoneuint64(const char *path, const char *filename, const char *conf_name, unsigned long long *value, const unsigned long long *default_value)
+{
+	if (NULL == conf_name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	int ret = ss_conf_getuint64(conf, conf_name, value, NULL, default_value);
+	ss_conf_close(conf);
+	return ret;
+
+}
+
+int ss_conf_getonefloat(const char *path, const char *filename, const char *conf_name, float *value, const float *default_value)
+{
+	if (NULL == conf_name || NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	int ret = ss_conf_getfloat(conf, conf_name, value, NULL, default_value);
+	ss_conf_close(conf);
+
+	return ret;
+}
+
+int ss_conf_getonesvr(const char *path, const char *filename, const char *product_name, const char *module_name, ss_svr_t *value)
+{
+	if (NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	int ret = ss_conf_getsvr(conf, product_name, module_name, value, NULL);
+	ss_conf_close(conf);
+	return ret;
+}
+
+int ss_conf_getonereqsvr(const char *path, const char *filename, const char *product_name, const char *module_name, ss_request_svr_t *value)
+{
+	if (NULL == value) {
+		return SS_CONF_NULL;
+	}
+
+	if (NULL == path || NULL == filename) {
+		return SS_CONF_NULL;
+	}
+
+	ss_conf_data_t *conf = NULL;
+	conf = ss_conf_init(path, filename);
+	if (NULL == conf) {
+		return SS_CONF_NULL;
+	}
+
+	int ret = ss_conf_getreqsvr(conf, product_name, module_name, value, NULL);
+
+	ss_conf_close(conf);
+
+	return ret;
+
 }
