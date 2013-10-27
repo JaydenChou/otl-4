@@ -113,6 +113,67 @@ TEST(ss_conf, test_ss_conf_init)
 	ASSERT_EQ(SS_CONF_SUCCESS, ret);
 
 }
+
+TEST(ss_conf, test_getconf)
+{
+	int ret;
+	char str_value[WORD_SIZE];
+	char *default_str = "default_str";
+	ret = ss_conf_getonenstr(path, filename, "str", str_value, sizeof(str_value), NULL);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+	ASSERT_STREQ("string", str_value);
+	ret = ss_conf_getonenstr(path, filename, "default_str", str_value, sizeof(str_value), default_str);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+	ASSERT_STREQ("default_str", str_value);
+
+	int num_int;
+	int default_int = 100;
+	ret = ss_conf_getoneint(path, filename, "int", &num_int, NULL);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+	ASSERT_EQ(10, num_int);
+	ret = ss_conf_getoneint(path, filename, "default_int", &num_int, &default_int);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+	ASSERT_EQ(100, num_int);
+
+	unsigned int num_uint;
+	unsigned int default_uint = 123456;
+	ret = ss_conf_getoneuint(path, filename, "uint", &num_uint, NULL);
+	ASSERT_EQ(65534, num_uint);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+	ret = ss_conf_getoneuint(path, filename, "default_uint", &num_uint, &default_uint);
+	ASSERT_EQ(123456, num_uint);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+
+	long long num_int64;
+	long long default_int64 = 10001234;
+	ret = ss_conf_getoneint64(path, filename, "int64", &num_int64, NULL);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+	ASSERT_EQ(123456789, num_int64);
+
+	ret = ss_conf_getoneint64(path, filename, "default_int64", &num_int64, &default_int64);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+	ASSERT_EQ(10001234, num_int64);
+
+	unsigned long long num_uint64;
+	unsigned long long default_uint64 = 123450000;
+	ret = ss_conf_getoneuint64(path, filename, "uint64", &num_uint64, NULL);
+	ASSERT_EQ(987654321, num_uint64);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+
+	ret = ss_conf_getoneuint64(path, filename, "default_uint64", &num_uint64, &default_uint64);
+	ASSERT_EQ(123450000, num_uint64);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+
+	float num_float;
+	float default_float = 1.234;
+	ret = ss_conf_getonefloat(path, filename, "float", &num_float, NULL);
+	ASSERT_FLOAT_EQ(1234.5, num_float);
+	ASSERT_EQ(SS_CONF_SUCCESS, ret);
+	ret = ss_conf_getonefloat(path, filename, "default_float", &num_float, &default_float);
+	ASSERT_FLOAT_EQ(1.234, num_float);
+	ASSERT_EQ(SS_CONF_DEFAULT, ret);
+
+}
 int main(int argc, char *argv[])
 {
 	::testing::InitGoogleTest(&argc, argv);
