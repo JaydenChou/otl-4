@@ -9,7 +9,7 @@ INCPATH = -I. \
 		  -I../../GTEST/include \
 		  -I./small_server/
 #all:output/lib_conf_test.o output/lib_conf.o output/lib_log.o output/lib_log_test.o
-all:output/lib_conf_test output/lib_log_test output/ss_log_test output/ss_conf_test output/ss_timer_test
+all:output/lib_conf_test output/lib_log_test output/ss_log_test output/ss_conf_test output/ss_timer_test output/lib_net.o
 output/lib_conf_test: output/lib_conf_test.o output/lib_conf.o output/lib_log.o 
 	$(CXX) $(INCPATH) $(CXXFLAGS) output/lib_conf_test.o output/lib_conf.o output/lib_log.o -Xlinker "-(" ../../GTEST/lib/gtest_main.a -Xlinker "-)" -o output/lib_conf_test
 output/lib_log_test: output/lib_log_test.o output/lib_log.o
@@ -24,6 +24,8 @@ output/lib_log.o:lib/lib_log.cpp lib/lib_log.h
 	$(CXX) -c $(INCPATH) $(CXXFLAGS) lib/lib_log.cpp -o output/lib_log.o
 output/lib_conf.o:lib/lib_conf.cpp lib/lib_conf.h lib/lib_log.h
 	$(CXX) -c $(INCPATH) $(CXXFLAGS) lib/lib_conf.cpp -o output/lib_conf.o
+output/lib_net.o:lib/lib_net.cpp lib/lib_conf.h lib/lib_log.h
+	$(CXX) -c $(INCPATH) $(CXXFLAGS) lib/lib_net.cpp -o output/lib_net.o
 output/ss_log.o:small_server/ss_log.cpp small_server/ss_log.h
 	$(CXX) -c $(INCPATH) $(CXXFLAGS) small_server/ss_log.cpp -o output/ss_log.o
 output/ss_conf.o:small_server/ss_conf.cpp small_server/ss_conf.h
